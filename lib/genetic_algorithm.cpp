@@ -56,12 +56,13 @@ void GeneticAlgorithm::run() {
 
         // Evaluate fitness of the current population
         for (int i = 0; i < m_populationSize; ++i) {
+            std::cout<<"evaluateFitness "<< i <<std::endl;
             evaluateFitness(m_population[i], network_operator, system_model);
         }
-
+        std::cout<<"evaluateFitness"<<std::endl;
         // Calculate Pareto ranks
         calculateParetoRanks();
-
+        std::cout<<"calculateParetoRanks"<<std::endl;
         // Select parents and generate offspring
         std::vector<Chromosome> offspring_population;
         offspring_population.reserve(m_populationSize); // Assuming same number of offspring as population size
@@ -188,7 +189,10 @@ void GeneticAlgorithm::evaluateFitness(Chromosome& chromosome, NetOper& network_
 
         // Get control outputs from the network operator
         std::vector<float> control_outputs(network_operator.getNodesForOutput().size()); // Assuming output size matches Dnum
+        std::cout<<"control_outputs"<<std::endl;
         network_operator.calcResult(nop_inputs, control_outputs);
+
+        std::cout<<"calcResult"<<std::endl;
 
         // Create Control struct from network operator outputs
         Model::Control control_input = {control_outputs[0], control_outputs[1]}; // Assuming Dnum maps to left/right control
@@ -210,6 +214,7 @@ void GeneticAlgorithm::evaluateFitness(Chromosome& chromosome, NetOper& network_
         }
     }
 
+    std::cout<<"!!!!!!!!!!!!1;"<<std::endl;
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
 

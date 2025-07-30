@@ -126,28 +126,39 @@ void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_o
         else
             z[i] = 0;
     }
-
+    std::cout<<"1"<<std::endl;
     for(size_t i=0; i < m_nodesForVars.size(); ++i)
         z[m_nodesForVars[i]] = x_in[i];
-
+        std::cout<<"2"<<std::endl;
     for (size_t i=0; i < m_nodesForParams.size(); ++i)
         z[m_nodesForParams[i]] = m_parameters[i];
-
+        std::cout<<"3"<<std::endl;
     for(size_t i=0; i < m_matrix.size() - 1; ++i)
     {
+        std::cout<<"3.5"<<std::endl;
         for(size_t j=i+1; j < m_matrix.size(); ++j)
         {
+            std::cout<<"3.75"<<std::endl;
             if (m_matrix[i][j] == 0)
                 continue;
+            
+            std::cout<<"getUnaryOperationResult "<<m_matrix[i][j]<<std::endl;
+            
             auto zz = getUnaryOperationResult(m_matrix[i][j], z[i]);
+            
+            std::cout<<"getBinaryOperationResult "<<m_matrix[j][j]<<std::endl;
 
             z[j] = getBinaryOperationResult(m_matrix[j][j], z[j], zz);
+            std::cout<<"3.75"<<std::endl;
 
         }
     }
+    std::cout<<"4"<<std::endl;
 
     for(size_t i = 0; i < m_nodesForOutput.size(); ++i)
         y_out[i] = z[m_nodesForOutput[i]];
+    
+    std::cout<<"5"<<std::endl;
 
 }
 
@@ -204,6 +215,30 @@ const std::vector<std::vector<int>> NopPsiN =
 
 // from q_461.txt
 std::vector<float> qc = {12.86841, 3.82666, 6.94312};
+
+// const std::vector<std::vector<int>> NopPsiN =
+//   { {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 7, 10, 6},
+//     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 11, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 2, 19, 0, 12, 0, 0, 23, 15, 10, 0, 23, 0, 0, 5},
+//     {0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 12, 19, 0, 0, 0, 0, 1, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 19, 0, 0, 0, 8, 0, 0, 0, 19},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 13, 4, 0, 1, 12, 1, 23, 19, 8},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 18, 0, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 12, 0, 0, 0, 19, 14, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 23, 18, 0, 14, 6},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13, 4, 19, 3, 0, 0},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 10, 0, 12, 14},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 14, 16, 18},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 4},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16, 1},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7},
+//     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+
+// std::vector<float> qc = {0.16455, 2.04834, 3.62256};
 
 // Base NetOper matrix to represent simple desiredFucntion from nop_test and controller_test
 const std::vector<std::vector<int>> Psi =
