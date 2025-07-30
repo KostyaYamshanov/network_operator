@@ -19,17 +19,17 @@ Model::Control Model::Control::operator*(float val)
 
 // Model::State
 
-bool Model::State::operator==(const Model::State &state) 
+bool Model::State::operator==(const Model::State &state) const
 {
   return (this->x == state.x) && (this->y == state.y) && (this->yaw == state.yaw);
 }
 
-Model::State Model::State::operator+(const Model::State &state) 
+Model::State Model::State::operator+(const Model::State &state) const
 {
   return Model::State{this->x + state.x, this->y + state.y, this->yaw + state.yaw};
 }
 
-Model::State Model::State::operator-(const Model::State &state) 
+Model::State Model::State::operator-(const Model::State &state) const
 {
   const float &yaw1=this->yaw;
   const float &yaw2=state.yaw;
@@ -37,12 +37,12 @@ Model::State Model::State::operator-(const Model::State &state)
   return State{this->x - state.x, this->y - state.y, dyaw};
 }
 
-Model::State Model::State::operator*(float val) 
+Model::State Model::State::operator*(float val) const
 {
   return Model::State{this->x * val, this->y * val, this->yaw * val};
 }
 
-float Model::State::dist(const Model::State &state) 
+float Model::State::dist(const Model::State &state) const
 {
   float dx = fabs(this->x - state.x);
   float dy = fabs(this->y - state.y);
@@ -51,13 +51,13 @@ float Model::State::dist(const Model::State &state)
   return std::sqrt(dx * dx + dy * dy + dyaw * dyaw);
 }
 
-float Model::State::distXY(const Model::State &state)
+float Model::State::distXY(const Model::State &state) const
 {
   auto ds = this->operator-(state);
   return std::sqrt(ds.x * ds.x + ds.y * ds.y);
 }
 
-void Model::State::print() 
+const void Model::State::print() const
 {
   std::cout << x << " " << y << " " << yaw << "\n";
 }
@@ -81,9 +81,10 @@ const Model::State& Model::getState()
 
 Model::State Model::velocityFromControl(const Model::Control &u) 
 {
+  float k_w = 0.5;
   return  State{k * (u.left + u.right) * cosf(m_currentState.yaw),
                 k * (u.left + u.right) * sinf(m_currentState.yaw),
-                k * (u.left - u.right)};
+                k_w * k * (u.left - u.right)};
 }
 
 Model::State Model::nextStateFromVelocity(Model::State &vel) 

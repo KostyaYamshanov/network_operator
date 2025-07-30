@@ -23,13 +23,13 @@ struct State
   float y;
   float yaw;
 
-  bool operator==(const State &state);
-  State operator+(const State &state);
-  State operator-(const State &state);
-  State operator*(float val);
-  float dist(const State &state);
-  float distXY(const State &state);
-  void print();
+  bool operator==(const State &state) const;
+  State operator+(const State &state) const;
+  State operator-(const State &state) const;
+  State operator*(float val) const;
+  float dist(const State &state) const;
+  float distXY(const State &state) const;
+  const void print() const;
 };
 
 public:

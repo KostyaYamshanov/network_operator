@@ -24,6 +24,7 @@ set(LibSources
     lib/nop.cpp
     lib/reader.cpp
     lib/runner.cpp
+    lib/genetic_algorithm.cpp
 )
 
 add_library(${This} STATIC ${LibSources})
@@ -36,7 +37,14 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 add_executable(run_to_goal app/run_to_goal.cpp)
 
+add_executable(train app/train.cpp)
+
 target_link_libraries(run_to_goal PUBLIC
+    nop_cpp
+    ${Boost_LIBRARIES}
+)
+
+target_link_libraries(train PUBLIC
     nop_cpp
     ${Boost_LIBRARIES}
 )
@@ -44,23 +52,23 @@ target_link_libraries(run_to_goal PUBLIC
 endif()
 
 
-if (BUILD_TESTS)
+# if (BUILD_TESTS)
 
-add_subdirectory(
-    test
-)
+# add_subdirectory(
+#     test
+# )
 
-endif()
+# endif()
 
 
-if (TO_CATKIN_WS)
+# if (TO_CATKIN_WS)
 
-install(
-    TARGETS nop_cpp
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+# install(
+#     TARGETS nop_cpp
+#     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# )
 
-endif()
+# endif()
 
