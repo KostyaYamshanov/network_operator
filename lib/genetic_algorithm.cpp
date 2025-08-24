@@ -13,7 +13,11 @@ GeneticAlgorithm::GeneticAlgorithm(
     float time_step,
     float terminal_threshold,
     size_t psi_matrix_dimension,
-    size_t num_network_operator_parameters
+    size_t num_network_operator_parameters, 
+    const std::vector<float>& qy_min,
+    const std::vector<float>& qy_max,
+    const std::vector<float>& qy_step,
+    size_t num_undefined_params
 ) :
     m_populationSize(population_size),
     m_numGenerations(num_generations),
@@ -25,7 +29,11 @@ GeneticAlgorithm::GeneticAlgorithm(
     m_terminalThreshold(terminal_threshold),
     m_psiMatrixDimension(psi_matrix_dimension),
     m_numNetworkOperatorParameters(num_network_operator_parameters),
-    m_population(population_size, Chromosome(psi_matrix_dimension, num_network_operator_parameters))
+    m_population(population_size, Chromosome(psi_matrix_dimension, num_network_operator_parameters)),
+    m_qyMin(qy_min),
+    m_qyMax(qy_max),
+    m_qyStep(qy_step),
+    m_numUndefinedParams(num_undefined_params)
 {
     std::random_device rd;
     m_randomEngine.seed(rd());
@@ -34,12 +42,6 @@ GeneticAlgorithm::GeneticAlgorithm(
 void GeneticAlgorithm::run() {
     // Create NetOper and Model objects for fitness evaluation
     NetOper network_operator;
-    // You might need to set initial parameters for the network_operator here
-    // based on your application's requirements and the Pascal code defaults.
-    // For example:
-    // network_operator.setNodesForVars({...});
-    // network_operator.setNodesForParams({...});
-    // network_operator.setNodesForOutput({...});
 
     network_operator.setNodesForVars({0, 1, 2});   // Pnum
     network_operator.setNodesForParams({3, 4, 5}); // Rnum
@@ -56,7 +58,7 @@ void GeneticAlgorithm::run() {
 
         // Evaluate fitness of the current population
         for (int i = 0; i < m_populationSize; ++i) {
-            std::cout<<"evaluateFitness "<< i <<std::endl;
+            // std::cout<<"evaluateFitness "<< i <<std::endl;
             evaluateFitness(m_population[i], network_operator, system_model);
         }
         std::cout<<"evaluateFitness"<<std::endl;
@@ -131,23 +133,38 @@ void GeneticAlgorithm::initializePopulation() {
     std::random_device rd;
     m_randomEngine.seed(rd()); // Seed the random number generator
 
-    // Fill chromosomes with random data (similar to Pascal's GenAlgorithm)
+    // Define the valid range for binary operation indices
+    std::uniform_int_distribution<int> binary_op_distribution(1, 7); // Keys 1 to 8
+
+    // Define the valid range for unary operation and connection indices
+    std::uniform_int_distribution<int> non_diagonal_distribution(0, 26);
+
+    // Initialize population
+    m_population.resize(m_populationSize, Chromosome(m_psiMatrixDimension, m_numNetworkOperatorParameters));
+
+    // Fill chromosomes with random data
     for (int i = 0; i < m_populationSize; ++i) {
         // Initialize psi_matrix randomly
         for (size_t row = 0; row < m_psiMatrixDimension; ++row) {
             for (size_t col = 0; col < m_psiMatrixDimension; ++col) {
-                // Generate random integer for matrix element
-                // **Adjust the range based on the Pascal code and baseFunctions.hpp**
-                m_population[i].psi_matrix[row][col] = std::uniform_int_distribution<int>(0, 28)(m_randomEngine); // Example range
+                if (row == col) {
+                    // Diagonal element: generate a valid binary operation index
+                    m_population[i].psi_matrix[row][col] = binary_op_distribution(m_randomEngine);
+                } else {
+                    // Non-diagonal element: generate a valid unary operation or connection index
+                    m_population[i].psi_matrix[row][col] = non_diagonal_distribution(m_randomEngine);
+                }
             }
         }
 
         // Initialize parameters (Cs) randomly
+        // ... (rest of parameter initialization)
         for (size_t j = 0; j < m_numNetworkOperatorParameters; ++j) {
             // Generate random float for parameters
             // **Adjust the range based on the Pascal code (e.g., qc range)**
-            m_population[i].parameters[j] = std::uniform_real_distribution<float>(-10.0, 10.0)(m_randomEngine); // Example range
+            m_population[i].parameters[j] = std::uniform_real_distribution<float>(-3.0, 3.0)(m_randomEngine); // Example range
         }
+
 
         // Fitness values will be calculated in evaluateFitness
         m_population[i].fitness_values.assign(2, 0.0); // Assuming 2 functionals
@@ -155,82 +172,190 @@ void GeneticAlgorithm::initializePopulation() {
     }
 }
 
+
+
+// void GeneticAlgorithm::evaluateFitness(Chromosome& chromosome, NetOper& network_operator, Model& system_model) {
+//     // Configure the network operator with the chromosome's data
+//     network_operator.setPsi(chromosome.psi_matrix);
+//     network_operator.setCs(chromosome.parameters);
+
+//     // Reset the system model to the initial state for simulation
+//     system_model.setState(m_initialState);
+
+//     // Simulate the system over time
+//     auto start_time = std::chrono::high_resolution_clock::now();
+//     float current_time = 0.0;
+
+//     // Simulation loop (similar to the loop in TUser.Func)
+//     // You might need to adjust the simulation duration or termination condition
+//     // based on the Pascal code's tf1 and epsterm.
+//     while (current_time <= m_numGenerations * m_timeStep) // Simulate for a fixed duration or until goal
+//     {
+//         // Get current state
+//         Model::State current_state = system_model.getState();
+
+//         // Check if the goal is reached
+//         if (current_state.dist(m_targetState) < m_terminalThreshold) {
+//             break; // Goal reached
+//         }
+
+//         // Calculate inputs for the network operator (difference from target state)
+//         std::vector<float> nop_inputs = {
+//             m_targetState.x - current_state.x,
+//             m_targetState.y - current_state.y,
+//             m_targetState.yaw - current_state.yaw
+//         };
+
+//         // Get control outputs from the network operator
+//         std::vector<float> control_outputs(network_operator.getNodesForOutput().size()); // Assuming output size matches Dnum
+        
+//         network_operator.calcResult(nop_inputs, control_outputs);
+
+//         // std::cout<<"calcResult"<<std::endl;
+
+//         // Create Control struct from network operator outputs
+//         Model::Control control_input = {control_outputs[0], control_outputs[1]}; // Assuming Dnum maps to left/right control
+
+//         // Apply control constraints (if any, based on Pascal OgrUpr)
+//         // You might need to add this logic here.
+//         // For simplicity, we'll omit it for now.
+
+//         // Update system state using the model
+//         system_model.setState(system_model.nextStateFromControl(control_input));
+
+//         // Increment time
+//         current_time += m_timeStep;
+
+//         // Prevent infinite loops in case of unstable systems
+//         if (current_time > m_numGenerations * m_timeStep * 2) { // Example: terminate if simulation runs too long
+//              current_time = m_numGenerations * m_timeStep + 1; // Mark as exceeding time limit
+//              break;
+//         }
+//     }
+
+//     // std::cout<<"!!!!!!!!!!!!1;"<<std::endl;
+//     auto end_time = std::chrono::high_resolution_clock::now();
+//     std::chrono::duration<double> elapsed = end_time - start_time;
+
+//     // Calculate fitness values (functionals)
+//     // Based on TUser.Func: time to reach goal and distance to goal
+//     chromosome.fitness_values[0] = elapsed.count(); // Time elapsed
+//     chromosome.fitness_values[1] = system_model.getState().dist(m_targetState); // Final distance to target
+
+//     // If goal was not reached within the simulation time, penalize fitness
+//     if (current_time > m_numGenerations * m_timeStep)
+//     {
+//          // Penalize based on the final distance or other criteria
+//          // **Adjust the penalty based on the Pascal Shtraf1**
+//         chromosome.fitness_values[0] += chromosome.fitness_values[1] * 100; // Example penalty
+//     }
+// }
+
+// genetic_algorithm.cpp
+
 void GeneticAlgorithm::evaluateFitness(Chromosome& chromosome, NetOper& network_operator, Model& system_model) {
-    // Configure the network operator with the chromosome's data
+    // Configure the network operator
     network_operator.setPsi(chromosome.psi_matrix);
     network_operator.setCs(chromosome.parameters);
 
-    // Reset the system model to the initial state for simulation
-    system_model.setState(m_initialState);
+    // Initialize accumulated fitness
+    std::vector<float> accumulated_fitness(2, 0.0);
 
-    // Simulate the system over time
-    auto start_time = std::chrono::high_resolution_clock::now();
-    float current_time = 0.0;
+    std::vector<int> qy_indices(m_numUndefinedParams, 0); // Indices for qy grid
+    bool more_qy_combinations = true;
 
-    // Simulation loop (similar to the loop in TUser.Func)
-    // You might need to adjust the simulation duration or termination condition
-    // based on the Pascal code's tf1 and epsterm.
-    while (current_time <= m_numGenerations * m_timeStep) // Simulate for a fixed duration or until goal
-    {
-        // Get current state
-        Model::State current_state = system_model.getState();
-
-        // Check if the goal is reached
-        if (current_state.dist(m_targetState) < m_terminalThreshold) {
-            break; // Goal reached
+    while (more_qy_combinations) {
+        // Calculate current qy values based on indices and steps
+        std::vector<float> current_qy(m_numUndefinedParams);
+        for (size_t i = 0; i < m_numUndefinedParams; ++i) {
+            current_qy[i] = m_qyMin[i] + m_qyStep[i] * qy_indices[i];
         }
 
-        // Calculate inputs for the network operator (difference from target state)
-        std::vector<float> nop_inputs = {
-            m_targetState.x - current_state.x,
-            m_targetState.y - current_state.y,
-            m_targetState.yaw - current_state.yaw
+        // Set the system's initial state by adding current_qy to the base initial_state
+        Model::State current_initial_state = {
+            m_initialState.x + current_qy[0],
+            m_initialState.y + current_qy[1],
+            m_initialState.yaw + current_qy[2]
         };
+        system_model.setState(current_initial_state);
 
-        // Get control outputs from the network operator
-        std::vector<float> control_outputs(network_operator.getNodesForOutput().size()); // Assuming output size matches Dnum
-        std::cout<<"control_outputs"<<std::endl;
-        network_operator.calcResult(nop_inputs, control_outputs);
 
-        std::cout<<"calcResult"<<std::endl;
+        // --- System Simulation Loop (existing logic) ---
+        // Run the simulation for this specific qy combination
+        auto start_time = std::chrono::high_resolution_clock::now();
+        float current_time = 0.0;
+        float terminal_time = 5.0;
+        while (current_time <= terminal_time) { // Adjust simulation duration
+        // while (current_time <= m_numGenerations * m_timeStep) { // Adjust simulation duration
+            // ... (get current state, check goal, calculate nop_inputs, get control outputs, update state)
+            Model::State current_state = system_model.getState();
 
-        // Create Control struct from network operator outputs
-        Model::Control control_input = {control_outputs[0], control_outputs[1]}; // Assuming Dnum maps to left/right control
+             if (current_state.dist(m_targetState) < m_terminalThreshold) {
+                break; // Goal reached for this qy combination
+            }
 
-        // Apply control constraints (if any, based on Pascal OgrUpr)
-        // You might need to add this logic here.
-        // For simplicity, we'll omit it for now.
+            std::vector<float> nop_inputs = {
+                m_targetState.x - current_state.x,
+                m_targetState.y - current_state.y,
+                 atan2f(sinf(m_targetState.yaw - current_state.yaw), cosf(m_targetState.yaw - current_state.yaw)) // Ensure angle wrapping
+            };
 
-        // Update system state using the model
-        system_model.setState(system_model.nextStateFromControl(control_input));
+            std::vector<float> control_outputs(network_operator.getNodesForOutput().size());
+            network_operator.calcResult(nop_inputs, control_outputs);
 
-        // Increment time
-        current_time += m_timeStep;
+            Model::Control control_input = {control_outputs[0], control_outputs[1]};
+            system_model.setState(system_model.nextStateFromControl(control_input));
 
-        // Prevent infinite loops in case of unstable systems
-        if (current_time > m_numGenerations * m_timeStep * 2) { // Example: terminate if simulation runs too long
-             current_time = m_numGenerations * m_timeStep + 1; // Mark as exceeding time limit
-             break;
+            current_time += m_timeStep;
+
+            //  if (current_time > m_numGenerations * m_timeStep * 2) { // Prevent infinite loops
+            //      current_time = m_numGenerations * m_timeStep + 1;
+             if (current_time > terminal_time) { // Prevent infinite loops
+                 current_time = terminal_time;
+                 break;
+             }
         }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end_time - start_time;
+
+        // Calculate fitness for this qy combination
+        std::vector<float> qy_fitness(2);
+        qy_fitness[0] = current_time; // elapsed.count();
+        qy_fitness[1] = system_model.getState().dist(m_targetState);
+
+        //if (current_time > m_numGenerations * m_timeStep) { // Penalize if goal not reached
+        if (current_time > terminal_time) { // Penalize if goal not reached
+            qy_fitness[0] += qy_fitness[1] * 100; // Adjust penalty
+        }
+
+
+        // Accumulate fitness
+        accumulated_fitness[0] += qy_fitness[0];
+        accumulated_fitness[1] += qy_fitness[1];
+
+
+        // --- Increment qy indices (LexPM logic) ---
+        // Implement the logic from Pascal's LexPM to get the next qy combination
+        size_t i = m_numUndefinedParams - 1;
+        while (i != (size_t)-1 && qy_indices[i] * m_qyStep[i] >= m_qyMax[i] - m_qyMin[i]) {
+            qy_indices[i] = 0;
+            --i;
+            // std::cout<<"test 0"<<std::endl;
+        }
+
+        if (i != (size_t)-1) {
+            qy_indices[i]++;
+        } else {
+            more_qy_combinations = false; // No more qy combinations
+        }
+        // std::cout<<"test"<<std::endl;
     }
 
-    std::cout<<"!!!!!!!!!!!!1;"<<std::endl;
-    auto end_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end_time - start_time;
-
-    // Calculate fitness values (functionals)
-    // Based on TUser.Func: time to reach goal and distance to goal
-    chromosome.fitness_values[0] = elapsed.count(); // Time elapsed
-    chromosome.fitness_values[1] = system_model.getState().dist(m_targetState); // Final distance to target
-
-    // If goal was not reached within the simulation time, penalize fitness
-    if (current_time > m_numGenerations * m_timeStep)
-    {
-         // Penalize based on the final distance or other criteria
-         // **Adjust the penalty based on the Pascal Shtraf1**
-        chromosome.fitness_values[0] += chromosome.fitness_values[1] * 100; // Example penalty
-    }
+    // Assign the accumulated fitness to the chromosome
+    chromosome.fitness_values = accumulated_fitness;
 }
+
 
 void GeneticAlgorithm::selectParents(std::vector<int>& parent_indices) {
     parent_indices.resize(2); // Select two parents
@@ -300,29 +425,66 @@ Chromosome GeneticAlgorithm::crossover(const Chromosome& parent1, const Chromoso
     return offspring;
 }
 
+// void GeneticAlgorithm::mutate(Chromosome& chromosome) {
+//     // Mutate psi_matrix
+//     for (size_t i = 0; i < m_psiMatrixDimension; ++i) {
+//         for (size_t j = 0; j < m_psiMatrixDimension; ++j) {
+//             if (std::uniform_real_distribution<double>(0.0, 1.0)(m_randomEngine) < m_mutationRate) {
+//                 // Mutate the matrix element
+//                 // Generate a random integer for the new value
+//                 // **Adjust the range based on the possible values in Psi matrix**
+//                 chromosome.psi_matrix[i][j] = std::uniform_int_distribution<int>(0, 28)(m_randomEngine); // Example range
+//             }
+//         }
+//     }
+
+//     // Mutate parameters
+//     for (size_t i = 0; i < m_numNetworkOperatorParameters; ++i) {
+//         if (std::uniform_real_distribution<double>(0.0, 1.0)(m_randomEngine) < m_mutationRate) {
+//             // Mutate the parameter value
+//             // Generate a random float for the new value
+//             // **Adjust the range based on the expected range of parameters**
+//             chromosome.parameters[i] = std::uniform_real_distribution<float>(-10.0, 10.0)(m_randomEngine); // Example range
+//         }
+//     }
+// }
+
 void GeneticAlgorithm::mutate(Chromosome& chromosome) {
+    // Define the valid range for binary operation indices
+    std::uniform_int_distribution<int> binary_op_distribution(1, 8); // Keys 1 to 8
+
+    // Define the valid range for unary operation and connection indices
+    // You need to determine the correct range based on your baseFunctions.hpp and the meaning of matrix values
+    std::uniform_int_distribution<int> non_diagonal_distribution(0, 28); // Example range, ADJUST THIS
+
     // Mutate psi_matrix
     for (size_t i = 0; i < m_psiMatrixDimension; ++i) {
         for (size_t j = 0; j < m_psiMatrixDimension; ++j) {
             if (std::uniform_real_distribution<double>(0.0, 1.0)(m_randomEngine) < m_mutationRate) {
                 // Mutate the matrix element
-                // Generate a random integer for the new value
-                // **Adjust the range based on the possible values in Psi matrix**
-                chromosome.psi_matrix[i][j] = std::uniform_int_distribution<int>(0, 28)(m_randomEngine); // Example range
+                if (i == j) {
+                    // Diagonal element: generate a valid binary operation index
+                    chromosome.psi_matrix[i][j] = binary_op_distribution(m_randomEngine);
+                } else {
+                    // Non-diagonal element: generate a valid unary operation or connection index
+                    chromosome.psi_matrix[i][j] = non_diagonal_distribution(m_randomEngine);
+                }
             }
         }
     }
 
     // Mutate parameters
+    // ... (rest of parameter mutation)
     for (size_t i = 0; i < m_numNetworkOperatorParameters; ++i) {
         if (std::uniform_real_distribution<double>(0.0, 1.0)(m_randomEngine) < m_mutationRate) {
             // Mutate the parameter value
             // Generate a random float for the new value
             // **Adjust the range based on the expected range of parameters**
-            chromosome.parameters[i] = std::uniform_real_distribution<float>(-10.0, 10.0)(m_randomEngine); // Example range
+            chromosome.parameters[i] = std::uniform_real_distribution<float>(-1.0, 1.0)(m_randomEngine); // Example range
         }
     }
 }
+
 
 void GeneticAlgorithm::calculateParetoRanks() {
     for (int i = 0; i < m_populationSize; ++i) {
@@ -331,39 +493,63 @@ void GeneticAlgorithm::calculateParetoRanks() {
 }
 
 int GeneticAlgorithm::calculateParetoRank(const std::vector<float>& fitness, const std::vector<Chromosome>& population) {
-    int count = 0;
-    size_t nfu = fitness.size(); // Number of functionals
-
+    int count = 0; // Number of solutions that dominate this one
+    size_t nfu = fitness.size();
     for (const auto& other_chromosome : population) {
         const std::vector<float>& other_fitness = other_chromosome.fitness_values;
-
-        // Check for dominance: is 'fitness' >= 'other_fitness' for all functionals?
-        bool not_dominated = true;
+        bool is_dominated = true;
+        bool strictly_worse = false;
         for (size_t j = 0; j < nfu; ++j) {
-            if (fitness[j] < other_fitness[j]) {
-                not_dominated = false;
-                break;
+            if (fitness[j] > other_fitness[j]) { // Worse in any objective
+                is_dominated = false;
+            }
+            if (fitness[j] > other_fitness[j]) { // Strictly worse
+                strictly_worse = true;
             }
         }
-
-        if (not_dominated) {
-            // Check if 'fitness' is strictly better than 'other_fitness' in at least one functional
-            bool are_equal = true;
-            for(size_t k = 0; k < nfu; ++k) {
-                if (fitness[k] != other_fitness[k]) {
-                    are_equal = false;
-                    break;
-                }
-            }
-
-            if (!are_equal) {
-                count++;
-            }
+        // Dominated if other is <= in all objectives and < in at least one
+        if (is_dominated && strictly_worse) {
+            count++;
         }
     }
-
-    return count;
+    return count; // Lower rank = non-dominated (better)
 }
+
+
+// int GeneticAlgorithm::calculateParetoRank(const std::vector<float>& fitness, const std::vector<Chromosome>& population) {
+//     int count = 0;
+//     size_t nfu = fitness.size(); // Number of functionals
+
+//     for (const auto& other_chromosome : population) {
+//         const std::vector<float>& other_fitness = other_chromosome.fitness_values;
+
+//         // Check for dominance: is 'fitness' >= 'other_fitness' for all functionals?
+//         bool not_dominated = true;
+//         for (size_t j = 0; j < nfu; ++j) {
+//             if (fitness[j] < other_fitness[j]) {
+//                 not_dominated = false;
+//                 break;
+//             }
+//         }
+
+//         if (not_dominated) {
+//             // Check if 'fitness' is strictly better than 'other_fitness' in at least one functional
+//             bool are_equal = true;
+//             for(size_t k = 0; k < nfu; ++k) {
+//                 if (fitness[k] != other_fitness[k]) {
+//                     are_equal = false;
+//                     break;
+//                 }
+//             }
+
+//             if (!are_equal) {
+//                 count++;
+//             }
+//         }
+//     }
+
+//     return count;
+// }
 
 void GeneticAlgorithm::selectNextGeneration(const std::vector<Chromosome>& offspring_population) {
     // Combine parent and offspring populations

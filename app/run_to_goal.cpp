@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
     nop.setNodesForVars({0, 1, 2});      // Pnum
     nop.setNodesForParams({3, 4, 5});    // Rnum
     nop.setNodesForOutput({22, 23});     // Dnum
+    // nop.setNodesForOutput({18, 18});  // Dnum - test
     nop.setCs(qc);                       // set Cs
     nop.setPsi(NopPsiN);                 // set matrix
 

@@ -16,6 +16,7 @@ void Runner::init(const Model::State& state)
     m_model.setState(state);
 }
 
+// TODO MB ERROR
 void Runner::Euler2() 
 {
     constexpr float K = 0.5;
@@ -31,7 +32,9 @@ void Runner::Euler2()
     Model::State v2 = m_model.velocityFromControl(u2); // fb
     m_model.setState(initialState);
     Model::State ctrl = (v1 + v2) * K;
+    // TODO TEST ONLY
     Model::State nextState = m_model.nextStateFromVelocity(ctrl);
+    // Model::State nextState = m_model.nextStateFromControl(ctrl);
 
     m_model.setState(nextState);
 }

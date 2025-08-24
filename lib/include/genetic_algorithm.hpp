@@ -13,16 +13,45 @@
 
 // Represents a chromosome (encoding of a NetOper configuration)
 struct Chromosome {
-    std::vector<std::vector<int>> psi_matrix;
-    std::vector<float> parameters; // Equivalent to Cs
+    // std::vector<std::vector<int>> psi_matrix;
+    std::vector<float> parameters = {12.86841, 3.82666, 6.94312}; // Equivalent to Cs
     // Add other parameters from NetOper if they are part of the chromosome
     std::vector<float> fitness_values; // To store functional values
     int pareto_rank; // Distance to Pareto set
 
+    std::vector<std::vector<int>> psi_matrix =
+    {{0,0,0,0,  0,0,1,10,  0,0,12,1,  0,0,0,0,  0,0,0,0,   0,0,0,10},
+     {0,0,0,0,  0,0,0, 1,  0,0,0,0,   0,0,0,0,  0,0,0,12,  0,0,0,0},
+     {0,0,0,0,  0,0,0, 0,  1,0,0,0,   0,0,2,9,  0,0,0,0,   10,0,0,0},
+     {0,0,0,0,  0,0,1, 0,  0,0,0,0,   0,0,0,13, 0,0,0,0,   0,0,0,0},
+  
+     {0,0,0,0,  0,0,0, 1,  0,0,0,0,   0,0,0,0,   0,0,1,0,   0,0,0,0},
+     {0,0,0,0,  0,0,0, 0,  1,0,0,0,   0,0,0,0,   0,0,0,0,   0,0,0,19},
+     {0,0,0,0,  0,0,2, 0,  0,8,0,5,   0,4,13,10, 0,0,0,14,  15,0,0,0},
+     {0,0,0,0,  0,0,0, 2,  0,1,10,9,  0,0,0,0,  0,0,0,0,   0,0,0,0},
+  
+     {0,0,0,0,  0,0,0,0,  2,1,0,0,   8,0,0,0,  12,0,0,0,  19,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,1,1,8,   0,0,0,1,  8,0,0,0,   14,12,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,1,1,   0,5,4,23, 1,0,0,0,   15,0,0,23},
+     {0,0,0,0,  0,0,0,0,  0,0,0,1,   17,10,10,0,  0,0,0,16,   0,16,0,16},
+  
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   1,0,15,0, 14,0,0,0,  0,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,1,9,0,  0,0,0,0,   0,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,1,1,  10,0,0,0,  0,12,0,13},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,1,  8,0,0,16,   0,0,0,0},
+  
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  1,1,0,0,   0,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,2,1,0,   15,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,2,0,   17,0,0,0},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,1,   5,0,0,17},
+  
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,   1,1,0,13},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,   0,1,1,17},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,   0,0,1,4},
+     {0,0,0,0,  0,0,0,0,  0,0,0,0,   0,0,0,0,  0,0,0,0,   0,0,0,1}};
+
     // Constructor (you might need to adjust parameters based on how chromosomes are created)
     Chromosome(size_t psi_dim, size_t num_params) :
-        psi_matrix(psi_dim, std::vector<int>(psi_dim)),
-        parameters(num_params),
         fitness_values(2), // Assuming 2 functionals as in TUser.Func
         pareto_rank(0)
     {}
@@ -42,7 +71,11 @@ public:
         float time_step,
         float terminal_threshold,
         size_t psi_matrix_dimension,
-        size_t num_network_operator_parameters
+        size_t num_network_operator_parameters,
+        const std::vector<float>& qy_min,
+        const std::vector<float>& qy_max,
+        const std::vector<float>& qy_step,
+        size_t num_undefined_params
     );
 
     void run(); // Main GA loop
@@ -75,6 +108,11 @@ private:
     size_t m_psiMatrixDimension;
     size_t m_numNetworkOperatorParameters;
 
+
+    std::vector<float> m_qyMin;
+    std::vector<float> m_qyMax;
+    std::vector<float> m_qyStep;
+    size_t m_numUndefinedParams; // To store ny1
 
     std::vector<Chromosome> m_population;
     std::default_random_engine m_randomEngine;

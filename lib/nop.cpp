@@ -126,40 +126,25 @@ void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_o
         else
             z[i] = 0;
     }
-    std::cout<<"1"<<std::endl;
+
     for(size_t i=0; i < m_nodesForVars.size(); ++i)
         z[m_nodesForVars[i]] = x_in[i];
-        std::cout<<"2"<<std::endl;
     for (size_t i=0; i < m_nodesForParams.size(); ++i)
         z[m_nodesForParams[i]] = m_parameters[i];
-        std::cout<<"3"<<std::endl;
     for(size_t i=0; i < m_matrix.size() - 1; ++i)
     {
-        std::cout<<"3.5"<<std::endl;
         for(size_t j=i+1; j < m_matrix.size(); ++j)
         {
-            std::cout<<"3.75"<<std::endl;
             if (m_matrix[i][j] == 0)
                 continue;
             
-            std::cout<<"getUnaryOperationResult "<<m_matrix[i][j]<<std::endl;
-            
             auto zz = getUnaryOperationResult(m_matrix[i][j], z[i]);
-            
-            std::cout<<"getBinaryOperationResult "<<m_matrix[j][j]<<std::endl;
-
             z[j] = getBinaryOperationResult(m_matrix[j][j], z[j], zz);
-            std::cout<<"3.75"<<std::endl;
-
         }
     }
-    std::cout<<"4"<<std::endl;
-
     for(size_t i = 0; i < m_nodesForOutput.size(); ++i)
         y_out[i] = z[m_nodesForOutput[i]];
     
-    std::cout<<"5"<<std::endl;
-
 }
 
 NOPMatrixReader& NetOper::getReader()
