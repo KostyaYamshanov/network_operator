@@ -225,7 +225,7 @@ public:
 
     void ChoosePareto()
     {
-        std::cout<<"ChoosePareto"<<std::endl;
+        // std::cout<<"ChoosePareto"<<std::endl;
         Pareto.clear();
         for (int i = 0; i < m_HH; ++i)
         {
@@ -237,25 +237,25 @@ public:
     }
 
     void Func0(std::vector<float>& Fu, NetOper& net) {
-        std::cout<<"FUNCTOINAL CALCULATE START"<<std::endl;
+        // std::cout<<"FUNCTOINAL CALCULATE START"<<std::endl;
         static std::vector<float> y_expected = get_target_values();
 
         std::vector<float> output = {0};
         float x = -100.0;
         std::vector<float> y_current;
-        std::cout<<"current"<<std::endl;
+        // std::cout<<"current"<<std::endl;
         for (int i = 0; i < 1000; i++)
         {
             net.calcResult({x}, output);
             x = x + 0.2;
-            std::cout<<output.size()<<" <-- SIZE output "<<std::endl; 
+            // std::cout<<output.size()<<" <-- SIZE output "<<std::endl; 
             y_current.push_back(output[0]);
-            std::cout<<output[0]<<" "; 
+            // std::cout<<output[0]<<" "; 
         }
-        std::cout<<std::endl;
+        // std::cout<<std::endl;
         Fu[0] = computeRMSE(y_expected, y_current);
         Fu[1] = Fu[0];
-        std::cout<<"FUNCTOINAL CALCULATE END"<<std::endl;
+        // std::cout<<"FUNCTOINAL CALCULATE END"<<std::endl;
     }
 
     void GenAlgorithm()
@@ -278,8 +278,8 @@ public:
 
         NOP.setCs(qc);                       // set Cs
         NOP.setPsi(NopPsiN);                 // set matrix
-        std::cout<<"Matrix after variations"<<std::endl;
-        NOP.printMatrix();
+        // std::cout<<"Matrix after variations"<<std::endl;
+        // NOP.printMatrix();
         
         // fix
         VectorToGrey(PopChrPar[0], NOP);
@@ -334,6 +334,7 @@ public:
         float pmut = 0.7;
         while(pt <= m_PP) // PP — число поколений
         {
+            std::cout<<pt<<" / "<<m_PP<<std::endl;
             for(int rt=0; rt<m_RR; ++rt) // RR — число кроссоверов на поколение
             {
                 // --- Выбор двух родителей ---
@@ -389,7 +390,7 @@ public:
                     }
 
                     // Кроссовер структур
-                    std::cout<<"Crossover of structures"<<std::endl;
+                    // std::cout<<"Crossover of structures"<<std::endl;
                     for(int i=0; i<ks1; ++i)
                     {
                         SonStr[2][i] = PopChrStr[k1][i];
@@ -401,13 +402,13 @@ public:
                         SonStr[3][i] = PopChrStr[k1][i];
                     }
 
-                    std::cout<<"Mutations"<<std::endl;
+                    // std::cout<<"Mutations"<<std::endl;
                     // --- Мутация и расчёт функционала для каждого сына ---
                     for(int s=0; s<4; ++s)
                     {
                         if(distReal(gen) < pmut)
                         {
-                            std::cout<<"if(distReal(gen) < pmut)"<<std::endl;
+                            // std::cout<<"if(distReal(gen) < pmut)"<<std::endl;
                             SonPar[s][distP(gen)] = distBit(gen);
                             NOP.GenVar(SonStr[s][distLchr(gen)]);
                         }
@@ -419,9 +420,9 @@ public:
                         GreyToVector(SonPar[s], NOP);
                         Func0(m_FuhSon[s], NOP); // функционалы для сына
                         m_LhSon[s] = Rast(m_FuhSon[s]);
-                        std::cout<<"cost function for son calculated"<<std::endl;
+                        // std::cout<<"cost function for son calculated"<<std::endl;
                         // --- Замена хромосомы с наибольшим Lh ---
-                        std::cout<<"chromosome changes for big Lh"<<std::endl;
+                        // std::cout<<"chromosome changes for big Lh"<<std::endl;
                         int Lmax = m_Lh[0];
                         int imax = 0;
                         for(int i=1; i<m_HH; ++i)
@@ -430,7 +431,7 @@ public:
                                 Lmax = m_Lh[i];
                                 imax = i;
                             }
-                        std::cout<<"chromosome changed with big Lh"<<std::endl;
+                        // std::cout<<"chromosome changed with big Lh"<<std::endl;
                         if(m_LhSon[s] < Lmax)
                         {
                             PopChrStr[imax] = SonStr[s];
@@ -440,10 +441,10 @@ public:
                                 m_Lh[i] = Rast(m_Fuh[i]);
                         }
                     } // конец цикла по сынам
-                    std::cout<<"End cicle for suns"<<std::endl;
+                    // std::cout<<"End cicle for suns"<<std::endl;
                 } // конец условия по ksi
             } // конец кроссоверов
-            std::cout<<"Crossover end"<<std::endl;
+            // std::cout<<"Crossover end"<<std::endl;
 
             // --- Эпоха закончена, обновление базиса и элита ---
             ChoosePareto();

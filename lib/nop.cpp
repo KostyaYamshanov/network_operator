@@ -17,8 +17,8 @@ float NetOper::getUnaryOperationResult(int operationNum, float input)
 float NetOper::getBinaryOperationResult(int operationNum, float left, float right)
 {
     // +1 ONLY FOR TESTS!!!
-    std::cout<<"getBinaryOperationResult"<<std::endl;
-    std::cout<<operationNum<<" "<<left<<" "<<right<<" "<<m_binaryFuncMap.size()<<std::endl;
+    // std::cout<<"getBinaryOperationResult"<<std::endl;
+    // std::cout<<operationNum<<" "<<left<<" "<<right<<" "<<m_binaryFuncMap.size()<<std::endl;
     // auto result = m_binaryFuncMap[operationNum](left, right);
     return m_binaryFuncMap[operationNum](left, right);
 }
@@ -135,30 +135,30 @@ void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_o
 
     for(size_t i=0; i < m_nodesForVars.size(); ++i)
     {
-        std::cout<<"test "<<x_in[i]<<std::endl;
+        // std::cout<<"test "<<x_in[i]<<std::endl;
         z[m_nodesForVars[i]] = x_in[i];
     }
     for (size_t i=0; i < m_nodesForParams.size(); ++i)
     {
-        std::cout<<"test_2 "<<m_parameters[i]<<std::endl;
+        // std::cout<<"test_2 "<<m_parameters[i]<<std::endl;
         z[m_nodesForParams[i]] = m_parameters[i];
     }
     for(size_t i=0; i < m_matrix.size() - 1; ++i)
     {
-        std::cout<<"test_3"<<std::endl;
+        // std::cout<<"test_3"<<std::endl;
         for(size_t j=i+1; j < m_matrix.size(); ++j)
         {
-            std::cout<<"test_4"<<std::endl;
+            // std::cout<<"test_4"<<std::endl;
             if (m_matrix[i][j] == 0)
                 continue;
             
             auto zz = getUnaryOperationResult(m_matrix[i][j], z[i]);
-            std::cout<<"test_5"<<std::endl;
-            std::cout<<"j = "<<j<<" z[j] = "<<z[j]<<" m_matrix[j][j]= "<<m_matrix[j][j]<<std::endl;
-            if (m_matrix[j][j] == 0)
-                std::cout<<"SEGFAULT!!!!"<<std::endl;
+            // std::cout<<"test_5"<<std::endl;
+            // std::cout<<"j = "<<j<<" z[j] = "<<z[j]<<" m_matrix[j][j]= "<<m_matrix[j][j]<<std::endl;
+            // if (m_matrix[j][j] == 0)
+            //     std::cout<<"SEGFAULT!!!!"<<std::endl;
             z[j] = getBinaryOperationResult(m_matrix[j][j], z[j], zz);
-            std::cout<<"test_6"<<std::endl;
+            // std::cout<<"test_6"<<std::endl;
         }
     }
     for(size_t i = 0; i < m_nodesForOutput.size(); ++i)

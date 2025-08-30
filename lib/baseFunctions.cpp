@@ -238,13 +238,13 @@ float xi_5(float l, float r)
 
 float xi_6(float l, float r)
 {
-	std::cout<<"xi_6"<<std::endl;
+	// std::cout<<"xi_6"<<std::endl;
 	return ro_10(l + r) * sqrt(pow(l, 2) + pow(r, 2));
 }
 
 float xi_7(float l, float r)
 {
-	std::cout<<"xi_7"<<std::endl;
+	// std::cout<<"xi_7"<<std::endl;
 	return ro_10(l + r) * (fabs(l) + fabs(r));
 }
 
