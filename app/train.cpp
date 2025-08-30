@@ -148,7 +148,7 @@
 #include "ganop.hpp"
 
 int main() {
-    GANOP ga(3, 4, 4, 7, 3, 2); // p=3, c=4, d=4, lchr=5, HH=100, nfu=2
+    GANOP ga(3, 4, 8, 7, 3, 2); // p=3, c=4, d=8, lchr=5, HH=3, nfu=1
     ga.GenAlgorithm();
     return 0;
 }

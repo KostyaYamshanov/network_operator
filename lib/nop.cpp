@@ -1,5 +1,6 @@
 #include "nop.hpp"
 #include <iostream>
+#include <random>
 
 
 NetOper::NetOper()
@@ -15,6 +16,10 @@ float NetOper::getUnaryOperationResult(int operationNum, float input)
 
 float NetOper::getBinaryOperationResult(int operationNum, float left, float right)
 {
+    // +1 ONLY FOR TESTS!!!
+    std::cout<<"getBinaryOperationResult"<<std::endl;
+    std::cout<<operationNum<<" "<<left<<" "<<right<<" "<<m_binaryFuncMap.size()<<std::endl;
+    // auto result = m_binaryFuncMap[operationNum](left, right);
     return m_binaryFuncMap[operationNum](left, right);
 }
 
@@ -109,10 +114,11 @@ void NetOper::setCs(const std::vector<float>& newParams)
 
 void NetOper::setPsi(const std::vector<std::vector<int>>& newMatrix)
 {
+    // std::cout<<"set new PSI"<<std::endl;
     m_matrix = newMatrix;
     z.resize(m_matrix.size());
 }
-
+// ROControl
 void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_out)
 {
     for(size_t i=0; i < m_matrix.size(); ++i)
@@ -128,18 +134,31 @@ void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_o
     }
 
     for(size_t i=0; i < m_nodesForVars.size(); ++i)
+    {
+        std::cout<<"test "<<x_in[i]<<std::endl;
         z[m_nodesForVars[i]] = x_in[i];
+    }
     for (size_t i=0; i < m_nodesForParams.size(); ++i)
+    {
+        std::cout<<"test_2 "<<m_parameters[i]<<std::endl;
         z[m_nodesForParams[i]] = m_parameters[i];
+    }
     for(size_t i=0; i < m_matrix.size() - 1; ++i)
     {
+        std::cout<<"test_3"<<std::endl;
         for(size_t j=i+1; j < m_matrix.size(); ++j)
         {
+            std::cout<<"test_4"<<std::endl;
             if (m_matrix[i][j] == 0)
                 continue;
             
             auto zz = getUnaryOperationResult(m_matrix[i][j], z[i]);
+            std::cout<<"test_5"<<std::endl;
+            std::cout<<"j = "<<j<<" z[j] = "<<z[j]<<" m_matrix[j][j]= "<<m_matrix[j][j]<<std::endl;
+            if (m_matrix[j][j] == 0)
+                std::cout<<"SEGFAULT!!!!"<<std::endl;
             z[j] = getBinaryOperationResult(m_matrix[j][j], z[j], zz);
+            std::cout<<"test_6"<<std::endl;
         }
     }
     for(size_t i = 0; i < m_nodesForOutput.size(); ++i)
@@ -192,7 +211,10 @@ void NetOper::GenVar(std::vector<int>& w)
     case 3: // замена недиагонального элемента, добавление и удаление дуги
         w[1] = rand() % (L - 1);
         w[2] = rand() % (L - w[1] - 1) + w[1] + 1;
+        // w[3] = (rand() % (kW - 1)) + 1; // Ensure w[3] is in [1, kW-1] // rand() % kW;
         w[3] = rand() % kW;
+        if (w[3] == 0)
+            w[3] = 1;
         break;
 
     case 1: // замена диагонального элемента
@@ -202,10 +224,50 @@ void NetOper::GenVar(std::vector<int>& w)
             w[1]++;
 
         w[2] = w[1];
+        // w[3] = (rand() % (kW - 1)) + 1; // Ensure w[3] is in [1, kW-1] // rand() % kV;
         w[3] = rand() % kV;
+        if (w[3] == 0)
+            w[3] = 1;
         break;
     }
 }
+
+// void NetOper::GenVar(std::vector<int>& w)
+// {
+//     static std::mt19937 gen(std::random_device{}());
+//     std::uniform_int_distribution<int> dist4(0, 3);
+//     std::uniform_int_distribution<int> distL(0, m_matrix.size() - 1);
+//     std::uniform_int_distribution<int> distKW(1, m_unaryFuncMap.size() - 1);
+//     std::uniform_int_distribution<int> distKV(1, m_binaryFuncMap.size() - 1);
+
+//     if (w.size() < 4) w.resize(4);
+
+//     int L = static_cast<int>(m_matrix.size());
+//     if (m_unaryFuncMap.size() <= 1 || m_binaryFuncMap.size() <= 1) {
+//         throw std::invalid_argument("m_unaryFuncMap and m_binaryFuncMap must have at least 2 elements");
+//     }
+
+//     w[0] = dist4(gen);
+
+//     switch (w[0])
+//     {
+//     case 0:
+//     case 2:
+//     case 3:
+//         w[1] = distL(gen);
+//         w[2] = w[1] + 1 + (rand() % (L - w[1] - 1)); // Note: Consider replacing rand() here too
+//         w[3] = distKW(gen); // Generates [1, kW-1]
+//         break;
+
+//     case 1:
+//         w[1] = distL(gen);
+//         while (w[1] < L && !TestSource(w[1]))
+//             w[1]++;
+//         w[2] = w[1];
+//         w[3] = distKV(gen); // Generates [1, kV-1]
+//         break;
+//     }
+// }
 
 // приминение вариации
 void NetOper::Variations(const std::vector<int>& w)
@@ -215,7 +277,7 @@ void NetOper::Variations(const std::vector<int>& w)
     // std::cout<<"Apply Variations"<<std::endl;
     // for (const auto& i : w)
     // {
-    //     std::cout<<i<<" ";
+        // std::cout<<i<<" ";
     // }
     // std::cout<<std::endl;
 
@@ -357,7 +419,6 @@ void NetOper::setLocalTestsParameters()
 
 // from q_461.txt
 // std::vector<float> qc = {12.86841, 3.82666, 6.94312};
-std::vector<float> qc = {1., 1., 1.};
 
 // const std::vector<std::vector<int>> NopPsiN =
 //   { {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 7, 10, 6},
@@ -384,13 +445,14 @@ std::vector<float> qc = {1., 1., 1.};
 // std::vector<float> qc = {0.16455, 2.04834, 3.62256};
 
 // Base NetOper matrix to represent simple desiredFucntion from nop_test and controller_test
+std::vector<float> qc = {1};
 const std::vector<std::vector<int>> Psi =
-    {{0,0,0,0,  0,1,1,1,  0,2,0,0, 0,0},
+   {{0,0,0,0,  0,1,1,1,  0,2,0,0, 0,0},
     {0,0,0,0,  0,0,1,0,  2,0,0,0, 0,0},
-    {0,0,0,0,  0,1,0,0,  0,0,0,0, 0,0},
-    {0,0,0,0,  0,0,0,0,  0,0,1,0, 0,0},
+    {0,0,1,0,  0,1,0,0,  0,0,0,0, 0,0},
+    {0,0,0,1,  0,0,0,0,  0,0,1,0, 0,0},
 
-    {0,0,0,0,  0,0,0,3,  0,0,0,0, 0,0},
+    {0,0,0,0,  1,0,0,3,  0,0,0,0, 0,0},
     {0,0,0,0,  0,2,0,0,  0,0,1,0, 0,0},
     {0,0,0,0,  0,0,2,0,  0,0,0,1, 0,0},
     {0,0,0,0,  0,0,0,2,  0,0,0,6, 0,0},
