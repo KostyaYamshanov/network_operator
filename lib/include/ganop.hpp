@@ -10,7 +10,7 @@ using TArrReal = std::vector<float>;
 
 // TEST
 float targetFunction(float x, float q) {
-    return std::sin(x) + std::cos(q * x);
+    return q*sinf(x) + cosf(q * 5.0 + x) + q;
 }
 
 
@@ -18,18 +18,14 @@ float targetFunction(float x, float q) {
 static std::vector<float>get_target_values()
 {
     std::vector<float> result;
-    float q = 2.5f; // Фиксированный параметр q
+    float q = 2.5f;
     float x = -100.0;
-    // std::cout<<"Expected Y"<<std::endl;
     for (int i = 0; i < 1000; i++)
     {
-        float y_expected = targetFunction(x,q);
+        float y_expected = targetFunction(x, q);
         result.push_back(y_expected);
         x = x + 0.2;
-        // std::cout<<y_expected<<" ";
     }
-    // std::cout<<std::endl;
-
     return result;
 }
 
@@ -42,7 +38,9 @@ float computeRMSE(const std::vector<float>& y_out, const std::vector<float>& y_r
         float diff = y_out[i] - y_ref[i];
         sum_squares += diff * diff;
     }
-    return std::sqrt(sum_squares / y_out.size());
+    // return std::sqrt(sum_squares / y_out.size());
+    return std::sqrt(sum_squares);
+
 }
 
 class GANOP
@@ -62,11 +60,8 @@ public:
     int m_nfu; // размер Fu
     int m_HH;  // размер популяции
     int m_lchr;  // количества вариаций в одном решении
-    int m_PP = 128; // число поколений
+    int m_PP = 16; // число поколений
     int m_RR = 128; // число кроссоверов 
-
-    // std::vector<double> m_q;         // parameters
-    // std::vector<int> m_zb;           // additional vector
 
     std::vector<TArrReal> m_Fuh; // значения функций
     std::vector<int> m_Lh;       // расстояния
@@ -168,7 +163,7 @@ public:
         for (int j = 0; j < m_p; j++)
         {
             int x = static_cast<int>(std::floor(nop.get_parameters()[j])); // целая часть
-            double r = nop.get_parameters()[j] - x;                        // дробная часть
+            double r = static_cast<double>(nop.get_parameters()[j] - static_cast<float>(x));                        // дробная часть
 
             // целая часть (c бит)
             int k = m_c + j * (m_c + m_d) - 1;
@@ -186,7 +181,7 @@ public:
                 r *= 2.0;
                 x = static_cast<int>(std::floor(r));
                 m_zb[k] = x;
-                r -= x;
+                r -= static_cast<float>(x);
                 k++;
             }
 
@@ -243,19 +238,14 @@ public:
         std::vector<float> output = {0};
         float x = -100.0;
         std::vector<float> y_current;
-        // std::cout<<"current"<<std::endl;
         for (int i = 0; i < 1000; i++)
         {
             net.calcResult({x}, output);
             x = x + 0.2;
-            // std::cout<<output.size()<<" <-- SIZE output "<<std::endl; 
             y_current.push_back(output[0]);
-            // std::cout<<output[0]<<" "; 
         }
-        // std::cout<<std::endl;
         Fu[0] = computeRMSE(y_expected, y_current);
         Fu[1] = Fu[0];
-        // std::cout<<"FUNCTOINAL CALCULATE END"<<std::endl;
     }
 
     void GenAlgorithm()
@@ -273,10 +263,10 @@ public:
         
         auto NOP = NetOper();
         NOP.setNodesForVars({0});      // Pnum
-        NOP.setNodesForParams({1});    // Rnum
+        NOP.setNodesForParams({1,2,3});    // Rnum
         NOP.setNodesForOutput({13});     // Dnum
 
-        NOP.setCs(qc);                       // set Cs
+        NOP.setCs({1.0,1.0,1.0});                       // set Cs
         NOP.setPsi(NopPsiN);                 // set matrix
         // std::cout<<"Matrix after variations"<<std::endl;
         // NOP.printMatrix();
@@ -314,8 +304,9 @@ public:
                 NOP.Variations(PopChrStr[i][j]);
 
             // std::cout<<"Matrix after variations"<<std::endl;
-            // NOP.printMatrix();
+            //
             GreyToVector(PopChrPar[i], NOP);
+
             Func0(m_Fuh[i], NOP); // функция рассчет функционала
         }
 
@@ -450,8 +441,9 @@ public:
             ChoosePareto();
             ++pt;
         } // конец поколений
-
+        int optimal_idx = 0;
         for (int idx : Pareto) {
+            optimal_idx = idx;
             std::cout << "Pareto solution index: " << idx << "\n";
             std::cout << "Params: ";
             for (int p : PopChrPar[idx]) std::cout << p << " ";
@@ -460,7 +452,52 @@ public:
             std::cout << "\n\n";
         }
 
+            // --- Select and apply best Pareto solution ---
+        if (Pareto.empty()) {
+            std::cerr << "No Pareto solutions found!" << std::endl;
+            return;
+        }
 
+        // Find the Pareto solution with the lowest RMSE (m_Fuh[i][0])
+        int best_idx = Pareto[0];
+        float min_rmse = m_Fuh[best_idx][0];
+        for (int idx : Pareto) {
+            if (m_Fuh[idx][0] < min_rmse) {
+                min_rmse = m_Fuh[idx][0];
+                best_idx = idx;
+            }
+        }
+
+        // Run simulation and log X, Y_target, Y_approx to file
+        std::ofstream outFile("function_data.csv");
+        if (!outFile.is_open()) {
+            std::cerr << "Failed to open function_data.csv for writing!" << std::endl;
+            return;
+        }
+        outFile << "X,Y_target,Y_approx\n";
+        std::vector<float> output = {0};
+        float q = 2.5f;
+        float x = -100.0;
+        std::vector<float> y_current;
+        NOP.setPsi(NopPsiN); // базис
+        for(int j=0; j<m_lchr; ++j)
+            NOP.Variations(PopChrStr[best_idx][j]);
+
+        GreyToVector(PopChrPar[best_idx], NOP);
+
+        std::cout<<"PARAM_VALUE = "<<NOP.getCs()[0] <<"  "<< NOP.getCs()[1]<<std::endl;
+        for (int i = 0; i < 1000; i++)
+        {
+            output[0] = 0;
+            float y_target = targetFunction(x, q);
+            NOP.calcResult({x}, output);
+            //float y_approx = NOP.get_z()[NOP.getNodesForOutput()[0]];
+            float y_approx = output[0];
+            x = x + 0.2;
+            outFile << x << "," << y_target << "," << y_approx << "\n";
+        }
+        NOP.printMatrix();
+        outFile.close();
     }
 
 

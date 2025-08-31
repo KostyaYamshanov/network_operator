@@ -3,10 +3,10 @@
 #include <iostream>
 #include <cmath>
 
-constexpr float Eps = pow(10, -8);
+constexpr float Eps = pow(10, -8.);
 constexpr size_t PokMax = 8; // what is it ????
 // todo try numeric_limits<float>::max()
-constexpr float Infinity = pow(10, 8);
+constexpr float Infinity = pow(10, 8.);
 
 // Unary functions
 float ro_1(float inp);

@@ -16,10 +16,6 @@ float NetOper::getUnaryOperationResult(int operationNum, float input)
 
 float NetOper::getBinaryOperationResult(int operationNum, float left, float right)
 {
-    // +1 ONLY FOR TESTS!!!
-    // std::cout<<"getBinaryOperationResult"<<std::endl;
-    // std::cout<<operationNum<<" "<<left<<" "<<right<<" "<<m_binaryFuncMap.size()<<std::endl;
-    // auto result = m_binaryFuncMap[operationNum](left, right);
     return m_binaryFuncMap[operationNum](left, right);
 }
 
@@ -124,13 +120,13 @@ void NetOper::calcResult(const std::vector<float>& x_in, std::vector<float>& y_o
     for(size_t i=0; i < m_matrix.size(); ++i)
     {
         if (m_matrix[i][i] == 2)
-            z[i] = 1;
+            z[i] = 1.0f;
         else if (m_matrix[i][i] == 3)
-            z[i] = (-1) * Infinity;
+            z[i] = (-1.0f) * Infinity;
         else if (m_matrix[i][i] == 4)
             z[i] = Infinity;
         else
-            z[i] = 0;
+            z[i] = 0.0f;
     }
 
     for(size_t i=0; i < m_nodesForVars.size(); ++i)
@@ -445,24 +441,42 @@ void NetOper::setLocalTestsParameters()
 // std::vector<float> qc = {0.16455, 2.04834, 3.62256};
 
 // Base NetOper matrix to represent simple desiredFucntion from nop_test and controller_test
-std::vector<float> qc = {1};
-const std::vector<std::vector<int>> Psi =
-   {{0,0,0,0,  0,1,1,1,  0,2,0,0, 0,0},
-    {0,0,0,0,  0,0,1,0,  2,0,0,0, 0,0},
-    {0,0,1,0,  0,1,0,0,  0,0,0,0, 0,0},
-    {0,0,0,1,  0,0,0,0,  0,0,1,0, 0,0},
+std::vector<float> qc = {1.0, 1.0, 1.0};
+// const std::vector<std::vector<int>> Psi =
+//    {{0,0,0,0,  0,1,1,1,  0,2,0,0, 0,0},
+//     {0,0,0,0,  0,0,1,0,  2,0,0,0, 0,0},
+//     {0,0,0,0,  0,1,0,0,  0,0,0,0, 0,0},
+//     {0,0,0,0,  0,0,0,0,  0,0,1,0, 0,0},
 
-    {0,0,0,0,  1,0,0,3,  0,0,0,0, 0,0},
-    {0,0,0,0,  0,2,0,0,  0,0,1,0, 0,0},
-    {0,0,0,0,  0,0,2,0,  0,0,0,1, 0,0},
-    {0,0,0,0,  0,0,0,2,  0,0,0,6, 0,0},
+//     {0,0,0,0,  1,0,0,3,  0,0,0,0, 0,0},
+//     {0,0,0,0,  0,1,0,0,  0,0,1,0, 0,0},
+//     {0,0,0,0,  0,0,1,0,  0,0,0,1, 0,0},
+//     {0,0,0,0,  0,0,0,1,  0,0,0,6, 0,0},
 
-    {0,0,0,0,  0,0,0,0,  1,3,0,0, 0,0},
-    {0,0,0,0,  0,0,0,0,  0,1,0,0, 1,0},
-    {0,0,0,0,  0,0,0,0,  0,0,1,0, 11,0},
-    {0,0,0,0,  0,0,0,0,  0,0,0,2, 0,1},
+//     {0,0,0,0,  0,0,0,0,  1,3,0,0, 0,0},
+//     {0,0,0,0,  0,0,0,0,  0,1,0,0, 1,0},
+//     {0,0,0,0,  0,0,0,0,  0,0,1,0, 11,0},
+//     {0,0,0,0,  0,0,0,0,  0,0,0,1, 0,1},
 
-    {0,0,0,0,  0,0,0,0,  0,0,0,0, 2,1},
-    {0,0,0,0,  0,0,0,0,  0,0,0,0, 0,1}};
+//     {0,0,0,0,  0,0,0,0,  0,0,0,0, 1,1},
+//     {0,0,0,0,  0,0,0,0,  0,0,0,0, 0,1}};
+
+const std::vector<std::vector<int>> Psi = {
+    {0, 0, 0, 0, 0, 1, 1, 26, 0, 2, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+    {0, 0, 0, 0, 4, 0, 0, 3, 0, 22, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 12},
+    {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 16, 0},
+    {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 8, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 1, 14, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 1, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 11, 8},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 13},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 18},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+};
+
 
 const std::vector<std::vector<int>> NopPsiN = Psi;
