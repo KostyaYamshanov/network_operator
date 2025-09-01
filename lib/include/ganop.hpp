@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include "runner.hpp"
 
 using TArrInt = std::vector<int>;
 using TArrReal = std::vector<float>;
@@ -60,7 +61,7 @@ public:
     int m_nfu; // размер Fu
     int m_HH;  // размер популяции
     int m_lchr;  // количества вариаций в одном решении
-    int m_PP = 16; // число поколений
+    int m_PP = 24; // число поколений
     int m_RR = 128; // число кроссоверов 
 
     std::vector<TArrReal> m_Fuh; // значения функций
@@ -86,7 +87,6 @@ public:
     // преобразование из кода Грея в вектор параметров
     void GreyToVector(const std::vector<int>& y, NetOper& nop)
     {
-        // std::cout<<"GreyToVector"<<std::endl;
         std::vector<int> m_zb;           // additional vector
 
         int l = m_c + m_d;
@@ -108,36 +108,24 @@ public:
         double g1 = 1.0;
         double g = 1.0;
 
-        // TEST
-        // fix
-        // nop.get_parameters().resize(m_p);
-
         // g1 = 2^(c-1)
         for (int i = 0; i < m_c - 1; i++)
             g1 *= 2.0;
-
-        // fix
-        // if (nop.get_parameters().size() < static_cast<size_t>(lf1 / l))
-        //     nop.get_parameters().resize(lf1 / l);
-        
+       
         // bug
         if (nop.get_parameters().size() < lf1 / l + 1)
         {
-            // std::cout<<"resize"<<std::endl;
             nop.get_parameters().resize(lf1 / l + 1);
         }
         // --- перевод бинарных блоков в числа ---
-        // std::cout<<"Bin to num"<<std::endl;
         for (int i = 0; i < lf1; i++)
         {
             if (i % l == 0)
             {
                 j++;
-                // std::cout<<" IF j="<< j <<" "<<nop.get_parameters().size()<<std::endl;
                 nop.get_parameters()[j] = 0.0;
                 g = g1;
             }
-            // std::cout<<" NOT IF j="<< j <<" "<<nop.get_parameters().size()<<std::endl;
             nop.get_parameters()[j] += g * m_zb[i];
             g /= 2.0;
         }
@@ -163,7 +151,7 @@ public:
         for (int j = 0; j < m_p; j++)
         {
             int x = static_cast<int>(std::floor(nop.get_parameters()[j])); // целая часть
-            double r = static_cast<double>(nop.get_parameters()[j] - static_cast<float>(x));                        // дробная часть
+            double r = static_cast<double>(nop.get_parameters()[j] - static_cast<float>(x)); // дробная часть
 
             // целая часть (c бит)
             int k = m_c + j * (m_c + m_d) - 1;
@@ -220,7 +208,6 @@ public:
 
     void ChoosePareto()
     {
-        // std::cout<<"ChoosePareto"<<std::endl;
         Pareto.clear();
         for (int i = 0; i < m_HH; ++i)
         {
@@ -231,21 +218,72 @@ public:
         }
     }
 
-    void Func0(std::vector<float>& Fu, NetOper& net) {
-        // std::cout<<"FUNCTOINAL CALCULATE START"<<std::endl;
-        static std::vector<float> y_expected = get_target_values();
+    // void Func0(std::vector<float>& Fu, NetOper& net) {
+    //     // std::cout<<"FUNCTOINAL CALCULATE START"<<std::endl;
+    //     static std::vector<float> y_expected = get_target_values();
 
-        std::vector<float> output = {0};
-        float x = -100.0;
-        std::vector<float> y_current;
-        for (int i = 0; i < 1000; i++)
-        {
-            net.calcResult({x}, output);
-            x = x + 0.2;
-            y_current.push_back(output[0]);
+    //     std::vector<float> output = {0};
+    //     float x = -100.0;
+    //     std::vector<float> y_current;
+    //     for (int i = 0; i < 1000; i++)
+    //     {
+    //         net.calcResult({x}, output);
+    //         x = x + 0.2;
+    //         y_current.push_back(output[0]);
+    //     }
+    //     Fu[0] = computeRMSE(y_expected, y_current);
+    //     Fu[1] = Fu[0];
+    // }
+
+    // FOR REAL MODEL
+    void Func0(std::vector<float>& Fu, NetOper& net) {
+        constexpr float dt = 0.01;
+        Model::State currState = {0.0, 0.0, 0.0}; 
+        Model model(currState, dt);
+        
+        Model::State goal = {0.0, 0.0, 0.0};
+        Controller controller(goal, net);
+
+        Runner runner(model, controller); 
+        runner.setGoal(goal);
+
+        std::vector<Model::State> init_states; 
+
+        int nGraphc = 8; // num of graphs
+
+        std::vector<float> qyminc = {-2.5,-2,5,-1.31};
+        std::vector<float> qymaxc = { 2.5, 2.5, 1.31};
+        
+        for (int i = 0; i < nGraphc; ++i) {
+            init_states.push_back(
+                Model::State{   i & 4? qymaxc[0] : qyminc[0], 
+                                i & 2? qymaxc[1] : qyminc[1], 
+                                i & 1? qymaxc[2] : qyminc[2] }
+                );
         }
-        Fu[0] = computeRMSE(y_expected, y_current);
-        Fu[1] = Fu[0];
+
+        float timeLimit = 5;          
+        float epsterm = 0.1;
+        float sumt = 0.0;
+        float sumdelt = 0.0;
+
+        for (int i = 0; i <= nGraphc - 1; ++i) {
+            runner.init(init_states[i]);
+            float currTime = 0;
+            while (currTime < timeLimit) {
+                currState = runner.makeStep();
+                // currState.print();
+                currTime += dt;
+                if (currState.dist(goal) < epsterm)
+                    break; 
+            }
+            sumt += currTime;
+            sumdelt += currState.dist(goal);
+        }
+
+        Fu[0] = sumt;
+        Fu[1] = sumdelt;
+
     }
 
     void GenAlgorithm()
@@ -257,44 +295,46 @@ public:
         std::uniform_int_distribution<int> distLchr(0, m_lchr-1);
         std::uniform_int_distribution<int> distP(0, m_p*(m_c+m_d)-1);
         
-        // NOP.setNodesForVars({0, 1, 2});      // Pnum
-        // NOP.setNodesForParams({3, 4, 5});    // Rnum
-        // NOP.setNodesForOutput({22, 23});     // Dnum
         
         auto NOP = NetOper();
-        NOP.setNodesForVars({0});      // Pnum
-        NOP.setNodesForParams({1,2,3});    // Rnum
-        NOP.setNodesForOutput({13});     // Dnum
+        // for simple task 
+        // NOP.setNodesForVars({0});      // Pnum
+        // NOP.setNodesForParams({1,2,3});    // Rnum
+        // NOP.setNodesForOutput({13});     // Dnum
 
-        NOP.setCs({1.0,1.0,1.0});                       // set Cs
+        NOP.setCs(qc);                       // set Cs
         NOP.setPsi(NopPsiN);                 // set matrix
+
+        NOP.setNodesForVars({0, 1, 2});      // Pnum
+        NOP.setNodesForParams({3, 4, 5});    // Rnum
+        NOP.setNodesForOutput({22, 23});     // Dnum
+
         // std::cout<<"Matrix after variations"<<std::endl;
         // NOP.printMatrix();
         
-        // fix
         VectorToGrey(PopChrPar[0], NOP);
 
         // create inital population
         for(int i=1; i<m_HH; ++i)
         {
-            std::cout<<"---- variations ------"<< std::endl;
+            // std::cout<<"---- variations ------"<< std::endl;
             for(int j=0; j<m_lchr; ++j)
             {
                 NOP.GenVar(PopChrStr[i][j]);
                 // debug
-                for (const auto& item : PopChrStr[i][j])
-                    std::cout<<item<<" ";
-                std::cout<<std::endl;
+                // for (const auto& item : PopChrStr[i][j])
+                //     std::cout<<item<<" ";
+                // std::cout<<std::endl;
             }
 
-            std::cout<<"---- params ------" <<std::endl;
+            // std::cout<<"---- params ------" <<std::endl;
             
             for(int j=0; j<m_p*(m_c+m_d); ++j)
             {
                 PopChrPar[i][j] = distBit(gen);
-                std::cout<<PopChrPar[i][j]<<" ";
+                // std::cout<<PopChrPar[i][j]<<" ";
             }    
-            std::cout<<std::endl;  
+            // std::cout<<std::endl;  
         }
         // вычисление функционала для популяции
         for(int i=0; i<m_HH; ++i)
@@ -458,47 +498,117 @@ public:
             return;
         }
 
-        // Find the Pareto solution with the lowest RMSE (m_Fuh[i][0])
+        // Find the Pareto solution with the lowest sumt (m_Fuh[i][0])
         int best_idx = Pareto[0];
-        float min_rmse = m_Fuh[best_idx][0];
+        float min_sumt = m_Fuh[best_idx][0];
         for (int idx : Pareto) {
-            if (m_Fuh[idx][0] < min_rmse) {
-                min_rmse = m_Fuh[idx][0];
+            if (m_Fuh[idx][0] < min_sumt) {
+                min_sumt = m_Fuh[idx][0];
                 best_idx = idx;
             }
         }
 
-        // Run simulation and log X, Y_target, Y_approx to file
-        std::ofstream outFile("function_data.csv");
-        if (!outFile.is_open()) {
-            std::cerr << "Failed to open function_data.csv for writing!" << std::endl;
-            return;
-        }
-        outFile << "X,Y_target,Y_approx\n";
-        std::vector<float> output = {0};
-        float q = 2.5f;
-        float x = -100.0;
-        std::vector<float> y_current;
-        NOP.setPsi(NopPsiN); // базис
-        for(int j=0; j<m_lchr; ++j)
-            NOP.Variations(PopChrStr[best_idx][j]);
+        std::cout << "Applying best Pareto solution (index: " << best_idx << ", sumt: " << min_sumt << ")" << std::endl;
 
+        // Configure NOP with the best solution
+        NOP.setPsi(NopPsiN);
+        for (int j = 0; j < m_lchr; ++j) {
+            NOP.Variations(PopChrStr[best_idx][j]);
+        }
         GreyToVector(PopChrPar[best_idx], NOP);
 
-        std::cout<<"PARAM_VALUE = "<<NOP.getCs()[0] <<"  "<< NOP.getCs()[1]<<std::endl;
-        for (int i = 0; i < 1000; i++)
-        {
-            output[0] = 0;
-            float y_target = targetFunction(x, q);
-            NOP.calcResult({x}, output);
-            //float y_approx = NOP.get_z()[NOP.getNodesForOutput()[0]];
-            float y_approx = output[0];
-            x = x + 0.2;
-            outFile << x << "," << y_target << "," << y_approx << "\n";
+        // Simulate trajectories for the best solution and log to file
+        std::ofstream outFile("trajectories.csv");
+        if (!outFile.is_open()) {
+            std::cerr << "Failed to open trajectories.csv for writing!" << std::endl;
+            return;
         }
-        NOP.printMatrix();
+
+        // Write header
+        outFile << "Trajectory,Time,X,Y,Theta\n";
+
+        // Initialize simulation parameters (same as in Func0)
+        constexpr float dt = 0.01;
+        Model::State currState = {0.0, 0.0, 0.0};
+        Model model(currState, dt);
+        Model::State goal = {0.0, 0.0, 0.0};
+        Controller controller(goal, NOP);
+        Runner runner(model, controller);
+        runner.setGoal(goal);
+
+        std::vector<Model::State> init_states;
+        int nGraphc = 8;
+        std::vector<float> qyminc = {-2.5, -2.5, -1.31};
+        std::vector<float> qymaxc = {2.5, 2.5, 1.31};
+
+        for (int i = 0; i < nGraphc; ++i) {
+            init_states.push_back(
+                Model::State{
+                    i & 4 ? qymaxc[0] : qyminc[0],
+                    i & 2 ? qymaxc[1] : qyminc[1],
+                    i & 1 ? qymaxc[2] : qyminc[2]
+                }
+            );
+        }
+
+        float timeLimit = 1.5;
+        float epsterm = 0.1;
+
+        // Simulate each trajectory and log
+        for (int i = 0; i < nGraphc; ++i) {
+            runner.init(init_states[i]);
+            float currTime = 0;
+            while (currTime < timeLimit) {
+                currState = runner.makeStep();
+                // Log: trajectory number, time, x, y, theta
+                outFile << i << "," << currTime << "," << currState.x << "," << currState.y << "," << currState.yaw << "\n";
+                currTime += dt;
+                if (currState.dist(goal) < epsterm)
+                    break;
+            }
+        }
+
         outFile.close();
+        std::cout << "Trajectories logged to trajectories.csv" << std::endl;
+
+        // Print final matrix for debugging
+        NOP.printMatrix();
     }
-
-
 };
+
+
+// void run_sim_for_simple_function()
+// {
+
+//         // // Run simulation and log X, Y_target, Y_approx to file
+//         // std::ofstream outFile("function_data.csv");
+//         // if (!outFile.is_open()) {
+//         //     std::cerr << "Failed to open function_data.csv for writing!" << std::endl;
+//         //     return;
+//         // }
+//         // outFile << "X,Y_target,Y_approx\n";
+//         // std::vector<float> output = {0};
+//         // float q = 2.5f;
+//         // float x = -100.0;
+//         // std::vector<float> y_current;
+//         NOP.setPsi(NopPsiN); // базис
+//         for(int j=0; j<m_lchr; ++j)
+//             NOP.Variations(PopChrStr[best_idx][j]);
+
+//         GreyToVector(PopChrPar[best_idx], NOP);
+//         NOP.printMatrix();
+
+//         // std::cout<<"PARAM_VALUE = "<<NOP.getCs()[0] <<"  "<< NOP.getCs()[1]<<std::endl;
+//         // for (int i = 0; i < 1000; i++)
+//         // {
+//         //     output[0] = 0;
+//         //     float y_target = targetFunction(x, q);
+//         //     NOP.calcResult({x}, output);
+//         //     //float y_approx = NOP.get_z()[NOP.getNodesForOutput()[0]];
+//         //     float y_approx = output[0];
+//         //     x = x + 0.2;
+//         //     outFile << x << "," << y_target << "," << y_approx << "\n";
+//         // }
+//         // NOP.printMatrix();
+//         // outFile.close();
+// }
