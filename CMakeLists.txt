@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 
 set(This nop_cpp)
 
@@ -13,6 +13,10 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O3 -lboost_program_options")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(ONNXRUNTIME_ROOT "/usr/local/onnxruntime") # или куда распаковал
+include_directories(${ONNXRUNTIME_ROOT}/include)
+link_directories(${ONNXRUNTIME_ROOT}/lib)
+
 include_directories(
     lib/include
 )
@@ -24,25 +28,26 @@ set(LibSources
     lib/nop.cpp
     lib/reader.cpp
     lib/runner.cpp
-    lib/genetic_algorithm.cpp
 )
 
 add_library(${This} STATIC ${LibSources})
 
+# Линкуем ONNXRuntime
+target_link_libraries(${This} PUBLIC onnxruntime)
 
 if (BUILD_APP)
 
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
-add_executable(run_to_goal app/run_to_goal.cpp)
+# add_executable(run_to_goal app/run_to_goal.cpp)
 
 add_executable(train app/train.cpp)
 
-target_link_libraries(run_to_goal PUBLIC
-    nop_cpp
-    ${Boost_LIBRARIES}
-)
+# target_link_libraries(run_to_goal PUBLIC
+#     nop_cpp
+#     ${Boost_LIBRARIES}
+# )
 
 target_link_libraries(train PUBLIC
     nop_cpp

@@ -9,41 +9,6 @@
 using TArrInt = std::vector<int>;
 using TArrReal = std::vector<float>;
 
-// TEST
-float targetFunction(float x, float q) {
-    return q*sinf(x) + cosf(q * 5.0 + x) + q;
-}
-
-
-
-static std::vector<float>get_target_values()
-{
-    std::vector<float> result;
-    float q = 2.5f;
-    float x = -100.0;
-    for (int i = 0; i < 1000; i++)
-    {
-        float y_expected = targetFunction(x, q);
-        result.push_back(y_expected);
-        x = x + 0.2;
-    }
-    return result;
-}
-
-float computeRMSE(const std::vector<float>& y_out, const std::vector<float>& y_ref) {
-    if (y_out.size() != y_ref.size()) {
-        throw std::invalid_argument("Vectors must have the same size");
-    }
-    float sum_squares = 0.0f;
-    for (size_t i = 0; i < y_out.size(); ++i) {
-        float diff = y_out[i] - y_ref[i];
-        sum_squares += diff * diff;
-    }
-    // return std::sqrt(sum_squares / y_out.size());
-    return std::sqrt(sum_squares);
-
-}
-
 class GANOP
 {
 
@@ -218,28 +183,10 @@ public:
         }
     }
 
-    // void Func0(std::vector<float>& Fu, NetOper& net) {
-    //     // std::cout<<"FUNCTOINAL CALCULATE START"<<std::endl;
-    //     static std::vector<float> y_expected = get_target_values();
-
-    //     std::vector<float> output = {0};
-    //     float x = -100.0;
-    //     std::vector<float> y_current;
-    //     for (int i = 0; i < 1000; i++)
-    //     {
-    //         net.calcResult({x}, output);
-    //         x = x + 0.2;
-    //         y_current.push_back(output[0]);
-    //     }
-    //     Fu[0] = computeRMSE(y_expected, y_current);
-    //     Fu[1] = Fu[0];
-    // }
-
-    // FOR REAL MODEL
     void Func0(std::vector<float>& Fu, NetOper& net) {
-        constexpr float dt = 0.01;
+        constexpr float dt = 0.033333;
         Model::State currState = {0.0, 0.0, 0.0}; 
-        Model model(currState, dt);
+        Model model(currState, dt, "rosbot_gazebo9_2d_model.onnx");
         
         Model::State goal = {0.0, 0.0, 0.0};
         Controller controller(goal, net);
@@ -251,8 +198,9 @@ public:
 
         int nGraphc = 8; // num of graphs
 
-        std::vector<float> qyminc = {-2.5,-2,5,-1.31};
-        std::vector<float> qymaxc = { 2.5, 2.5, 1.31};
+        // std::vector<float> qyminc = {-3.5,-3,5,-1.31};
+        std::vector<float> qyminc = {-3.5,-3,5,-1.31};
+        std::vector<float> qymaxc = { 3.5, 3.5, 1.31};
         
         for (int i = 0; i < nGraphc; ++i) {
             init_states.push_back(
@@ -262,16 +210,23 @@ public:
                 );
         }
 
-        float timeLimit = 5;          
+        float timeLimit = 30.0;          
         float epsterm = 0.1;
         float sumt = 0.0;
         float sumdelt = 0.0;
+        float sum_path = 0.0;
 
         for (int i = 0; i <= nGraphc - 1; ++i) {
             runner.init(init_states[i]);
             float currTime = 0;
+            float path_length = 0.0;
+            Model::State prevState = init_states[i];
             while (currTime < timeLimit) {
                 currState = runner.makeStep();
+                float dx = currState.x - prevState.x;
+                float dy = currState.y - prevState.y;
+                path_length += std::sqrt(dx * dx + dy * dy);
+                prevState = currState;
                 // currState.print();
                 currTime += dt;
                 if (currState.dist(goal) < epsterm)
@@ -279,11 +234,12 @@ public:
             }
             sumt += currTime;
             sumdelt += currState.dist(goal);
+            sum_path += path_length;
         }
 
-        Fu[0] = sumt;
-        Fu[1] = sumdelt;
-
+        Fu[0] = sumt * 2.0;
+        Fu[1] = sumdelt * 5.0;
+        Fu[2] = sum_path;
     }
 
     void GenAlgorithm()
@@ -361,8 +317,12 @@ public:
 
         int pt = 1;  // номер поколения
         int ksearch = 8;
-        float alfa = 0.4;
-        float pmut = 0.7;
+
+        // float alfa = 0.4;
+        // float pmut = 0.7;
+
+        float alfa = 0.5;
+        float pmut = 0.5;
         while(pt <= m_PP) // PP — число поколений
         {
             std::cout<<pt<<" / "<<m_PP<<std::endl;
@@ -528,9 +488,9 @@ public:
         outFile << "Trajectory,Time,X,Y,Theta\n";
 
         // Initialize simulation parameters (same as in Func0)
-        constexpr float dt = 0.01;
+        constexpr float dt = 0.03333;
         Model::State currState = {0.0, 0.0, 0.0};
-        Model model(currState, dt);
+        Model model(currState, dt, "rosbot_gazebo9_2d_model.onnx");
         Model::State goal = {0.0, 0.0, 0.0};
         Controller controller(goal, NOP);
         Runner runner(model, controller);
@@ -538,8 +498,9 @@ public:
 
         std::vector<Model::State> init_states;
         int nGraphc = 8;
-        std::vector<float> qyminc = {-2.5, -2.5, -1.31};
-        std::vector<float> qymaxc = {2.5, 2.5, 1.31};
+        // 1.31
+        std::vector<float> qyminc = {-3.5, -3.5, -1.31};
+        std::vector<float> qymaxc = {3.5, 3.5, 1.31};
 
         for (int i = 0; i < nGraphc; ++i) {
             init_states.push_back(
@@ -551,7 +512,7 @@ public:
             );
         }
 
-        float timeLimit = 1.5;
+        float timeLimit = 30.0;
         float epsterm = 0.1;
 
         // Simulate each trajectory and log
@@ -576,39 +537,3 @@ public:
     }
 };
 
-
-// void run_sim_for_simple_function()
-// {
-
-//         // // Run simulation and log X, Y_target, Y_approx to file
-//         // std::ofstream outFile("function_data.csv");
-//         // if (!outFile.is_open()) {
-//         //     std::cerr << "Failed to open function_data.csv for writing!" << std::endl;
-//         //     return;
-//         // }
-//         // outFile << "X,Y_target,Y_approx\n";
-//         // std::vector<float> output = {0};
-//         // float q = 2.5f;
-//         // float x = -100.0;
-//         // std::vector<float> y_current;
-//         NOP.setPsi(NopPsiN); // базис
-//         for(int j=0; j<m_lchr; ++j)
-//             NOP.Variations(PopChrStr[best_idx][j]);
-
-//         GreyToVector(PopChrPar[best_idx], NOP);
-//         NOP.printMatrix();
-
-//         // std::cout<<"PARAM_VALUE = "<<NOP.getCs()[0] <<"  "<< NOP.getCs()[1]<<std::endl;
-//         // for (int i = 0; i < 1000; i++)
-//         // {
-//         //     output[0] = 0;
-//         //     float y_target = targetFunction(x, q);
-//         //     NOP.calcResult({x}, output);
-//         //     //float y_approx = NOP.get_z()[NOP.getNodesForOutput()[0]];
-//         //     float y_approx = output[0];
-//         //     x = x + 0.2;
-//         //     outFile << x << "," << y_target << "," << y_approx << "\n";
-//         // }
-//         // NOP.printMatrix();
-//         // outFile.close();
-// }
