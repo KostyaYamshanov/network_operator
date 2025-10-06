@@ -26,5 +26,5 @@ public:
 protected:
   Model::State m_goal;
   NetOper m_netOper;
-  float Umax = 10.f;
+  float Umax = 1.0f; // was 0.4 - OK
 };

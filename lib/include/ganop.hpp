@@ -26,8 +26,8 @@ public:
     int m_nfu; // размер Fu
     int m_HH;  // размер популяции
     int m_lchr;  // количества вариаций в одном решении
-    int m_PP = 24; // число поколений
-    int m_RR = 128; // число кроссоверов 
+    int m_PP = 16; // число поколений
+    int m_RR = 24; // число кроссоверов 
 
     std::vector<TArrReal> m_Fuh; // значения функций
     std::vector<int> m_Lh;       // расстояния
@@ -210,7 +210,7 @@ public:
                 );
         }
 
-        float timeLimit = 30.0;          
+        float timeLimit = 15.0;          
         float epsterm = 0.1;
         float sumt = 0.0;
         float sumdelt = 0.0;
@@ -237,9 +237,10 @@ public:
             sum_path += path_length;
         }
 
-        Fu[0] = sumt * 2.0;
-        Fu[1] = sumdelt * 5.0;
+        Fu[0] = sumt;
+        Fu[1] = sumdelt * 2.0;
         Fu[2] = sum_path;
+        Fu[3] = sum_path * 1.5 + sumt + sumdelt * 7.0;
     }
 
     void GenAlgorithm()
@@ -262,7 +263,7 @@ public:
         NOP.setPsi(NopPsiN);                 // set matrix
 
         NOP.setNodesForVars({0, 1, 2});      // Pnum
-        NOP.setNodesForParams({3, 4, 5});    // Rnum
+        NOP.setNodesForParams({3, 4, 5, 6});    // Rnum
         NOP.setNodesForOutput({22, 23});     // Dnum
 
         // std::cout<<"Matrix after variations"<<std::endl;
@@ -460,10 +461,10 @@ public:
 
         // Find the Pareto solution with the lowest sumt (m_Fuh[i][0])
         int best_idx = Pareto[0];
-        float min_sumt = m_Fuh[best_idx][0];
+        float min_sumt = m_Fuh[best_idx][3];
         for (int idx : Pareto) {
-            if (m_Fuh[idx][0] < min_sumt) {
-                min_sumt = m_Fuh[idx][0];
+            if (m_Fuh[idx][3] < min_sumt) {
+                min_sumt = m_Fuh[idx][3];
                 best_idx = idx;
             }
         }
@@ -512,7 +513,7 @@ public:
             );
         }
 
-        float timeLimit = 30.0;
+        float timeLimit = 15.0;
         float epsterm = 0.1;
 
         // Simulate each trajectory and log
@@ -534,6 +535,10 @@ public:
 
         // Print final matrix for debugging
         NOP.printMatrix();
-    }
+
+        for (auto i : NOP.get_parameters())
+            std::cout<<i<<" ";
+        std::cout<<std::endl;
+    }   
 };
 
