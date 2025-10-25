@@ -14,17 +14,17 @@ class Controller
 {
 public:
   Controller(const Model::State &goalState, NetOper &netOper);
-
   /// RP from pascal version
-  Model::Control calcControl(const Model::State &currState);
-
+  virtual Model::Control calcControl(const Model::State &currState);
   /// set new goal state
   void setGoal(Model::State newGoal);
 
   NetOper& netOper();
+  
+  void setUMax(float newUMax);
 
 protected:
   Model::State m_goal;
   NetOper m_netOper;
-  const float Eps = 0.1; // [m]
+  float Umax = 1.0f; // was 0.4 - OK
 };

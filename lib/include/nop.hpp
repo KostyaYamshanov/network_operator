@@ -39,22 +39,31 @@ public:
 
     NOPMatrixReader& getReader();
     
+    void setLocalTestsParameters();
+    void printMatrix() const;
+
+    void GenVar(std::vector<int>& w);
+    void Variations(const std::vector<int>& w);
+
+    std::vector<float>& get_z();
+
+    std::vector<float>& get_parameters();
+
 private:
     void initUnaryFunctionsMap();
     void initBinaryFunctionsMap();
+    bool TestSource(int j);
 
 private:
     NOPMatrixReader m_reader;
     size_t m_numOutputs;                   // Mout
     // std::vector<float> m_variables;        // Vs // probably useless
     std::vector<float> m_parameters;       // Cs
-    std::vector<int> m_unaryOperations;    // O1s
-    std::vector<int> m_binaryOperations;   // O2s
     std::vector<int> m_nodesForVars;       // Pnum
     std::vector<int> m_nodesForParams;     // Rnum
     std::vector<int> m_nodesForOutput;     // Dnum
     std::vector<float> z;                  // z
-    std::vector<std::string> m_nodesExpr;  // zs
+    // std::vector<std::string> m_nodesExpr;  // zs
 
     std::vector<std::vector<int>> m_matrix; // Psi
 

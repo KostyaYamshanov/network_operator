@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     constexpr float delta = 0.1;
     
     Model::State currState = {start_x, start_y, start_yaw}; 
-    const Model::State Goal = {0., 0., 0.};
+    const Model::State Goal = {2., 2., 0.};
 
     std::cout<<"START\n";
     std::cout<<"Initial state = "<<currState.x<<" "<<currState.y<<" "<<currState.yaw<<"\n";
@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
     nop.setNodesForVars({0, 1, 2});      // Pnum
     nop.setNodesForParams({3, 4, 5});    // Rnum
     nop.setNodesForOutput({22, 23});     // Dnum
+    // nop.setNodesForOutput({18, 18});  // Dnum - test
     nop.setCs(qc);                       // set Cs
     nop.setPsi(NopPsiN);                 // set matrix
 

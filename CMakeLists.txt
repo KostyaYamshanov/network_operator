@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 
 set(This nop_cpp)
 
@@ -12,6 +12,12 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O3 -lboost_program_options")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# set(ONNXRUNTIME_ROOT "/usr/local/onnxruntime") # или куда распаковал
+set(ONNXRUNTIME_ROOT "/opt/onnxruntime") # или куда распаковал
+
+include_directories(${ONNXRUNTIME_ROOT}/include)
+link_directories(${ONNXRUNTIME_ROOT}/lib)
 
 include_directories(
     lib/include
@@ -28,15 +34,24 @@ set(LibSources
 
 add_library(${This} STATIC ${LibSources})
 
+# Линкуем ONNXRuntime
+target_link_libraries(${This} PUBLIC onnxruntime)
 
 if (BUILD_APP)
 
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
-add_executable(run_to_goal app/run_to_goal.cpp)
+# add_executable(run_to_goal app/run_to_goal.cpp)
 
-target_link_libraries(run_to_goal PUBLIC
+add_executable(train app/train.cpp)
+
+# target_link_libraries(run_to_goal PUBLIC
+#     nop_cpp
+#     ${Boost_LIBRARIES}
+# )
+
+target_link_libraries(train PUBLIC
     nop_cpp
     ${Boost_LIBRARIES}
 )
@@ -44,23 +59,23 @@ target_link_libraries(run_to_goal PUBLIC
 endif()
 
 
-if (BUILD_TESTS)
+# if (BUILD_TESTS)
 
-add_subdirectory(
-    test
-)
+# add_subdirectory(
+#     test
+# )
 
-endif()
+# endif()
 
 
-if (TO_CATKIN_WS)
+# if (TO_CATKIN_WS)
 
-install(
-    TARGETS nop_cpp
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+# install(
+#     TARGETS nop_cpp
+#     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# )
 
-endif()
+# endif()
 
