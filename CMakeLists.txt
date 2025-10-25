@@ -13,7 +13,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O3 -lboost_program_options")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(ONNXRUNTIME_ROOT "/usr/local/onnxruntime") # или куда распаковал
+# set(ONNXRUNTIME_ROOT "/usr/local/onnxruntime") # или куда распаковал
+set(ONNXRUNTIME_ROOT "/opt/onnxruntime") # или куда распаковал
+
 include_directories(${ONNXRUNTIME_ROOT}/include)
 link_directories(${ONNXRUNTIME_ROOT}/lib)
 
