@@ -4,21 +4,21 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <functional>
+#include <string>
+#include <fstream>
 #include "runner.hpp"
+#include "GANOPConfig.hpp"
 
 using TArrInt = std::vector<int>;
 using TArrReal = std::vector<float>;
 
 class GANOP
 {
-
 public:
-
-    // NetOper NOP;
-
     // --- популяция ---
     std::vector<TArrInt> PopChrPar;              // параметры 
-    std::vector<std::vector<TArrInt>> PopChrStr; // структры
+    std::vector<std::vector<TArrInt>> PopChrStr; // структуры
 
     int m_p;   // число параметров
     int m_c;   // число бит в целой части
@@ -26,8 +26,8 @@ public:
     int m_nfu; // размер Fu
     int m_HH;  // размер популяции
     int m_lchr;  // количества вариаций в одном решении
-    int m_PP = 16; // число поколений
-    int m_RR = 24; // число кроссоверов 
+    int m_PP; // число поколений
+    int m_RR; // число кроссоверов 
 
     std::vector<TArrReal> m_Fuh; // значения функций
     std::vector<int> m_Lh;       // расстояния
@@ -36,9 +36,40 @@ public:
     std::vector<int> m_LhSon;
     std::vector<int> Pareto;          // индексы Парето-оптимальных
 
+    // Дополнительные параметры из config
+    float mutation_prob;
+    float selection_alpha;
+    int search_neighbors;
+
+    // Simulation params
+    float dt;
+    float time_limit;
+    float epsilon_term;
+    int num_trajectories;
+    std::vector<float> qyminc;
+    std::vector<float> qymaxc;
+    std::string model_path;
+
+    // Logging
+    std::string output_csv;
+    bool enable_logging;
+
+    // Callbacks
+    std::function<void(int gen, float avg_fitness)> on_generation_end;
+
 public:
-    GANOP(int _p, int _c, int _d, int _lchr, int _HH, int _nfu)
-        : m_p(_p), m_c(_c), m_d(_d), m_lchr(_lchr), m_HH(_HH), m_nfu(_nfu)
+    GANOP(const GANOPConfig& config)
+        : m_p(config.num_params), m_c(config.int_bits), m_d(config.frac_bits),
+          m_lchr(config.num_struct_variations), m_HH(config.population_size),
+          m_nfu(config.num_objectives), m_PP(config.num_generations),
+          m_RR(config.num_crossovers_per_gen),
+          mutation_prob(config.mutation_prob), selection_alpha(config.selection_alpha),
+          search_neighbors(config.search_neighbors),
+          dt(config.dt), time_limit(config.time_limit), epsilon_term(config.epsilon_term),
+          num_trajectories(config.num_trajectories), qyminc(config.qyminc),
+          qymaxc(config.qymaxc), model_path(config.model_path),
+          output_csv(config.output_csv), enable_logging(config.enable_logging),
+          on_generation_end(config.on_generation_end)
     {
         PopChrPar.assign(m_HH, TArrInt(m_p * (m_c + m_d)));
         PopChrStr.assign(m_HH, std::vector<TArrInt>(m_lchr));
@@ -77,7 +108,7 @@ public:
         for (int i = 0; i < m_c - 1; i++)
             g1 *= 2.0;
        
-        // bug
+        // bug fix
         if (nop.get_parameters().size() < lf1 / l + 1)
         {
             nop.get_parameters().resize(lf1 / l + 1);
@@ -184,9 +215,8 @@ public:
     }
 
     void Func0(std::vector<float>& Fu, NetOper& net) {
-        constexpr float dt = 0.033333;
         Model::State currState = {0.0, 0.0, 0.0}; 
-        Model model(currState, dt, "rosbot_gazebo9_2d_model.onnx");
+        Model model(currState, dt, model_path);
         
         Model::State goal = {0.0, 0.0, 0.0};
         Controller controller(goal, net);
@@ -196,32 +226,26 @@ public:
 
         std::vector<Model::State> init_states; 
 
-        int nGraphc = 8; // num of graphs
-
-        // std::vector<float> qyminc = {-3.5,-3,5,-1.31};
-        std::vector<float> qyminc = {-3.5,-3,5,-1.31};
-        std::vector<float> qymaxc = { 3.5, 3.5, 1.31};
+        int nGraphc = num_trajectories;
         
         for (int i = 0; i < nGraphc; ++i) {
             init_states.push_back(
-                Model::State{   i & 4? qymaxc[0] : qyminc[0], 
-                                i & 2? qymaxc[1] : qyminc[1], 
-                                i & 1? qymaxc[2] : qyminc[2] }
+                Model::State{   i & 4 ? qymaxc[0] : qyminc[0], 
+                                i & 2 ? qymaxc[1] : qyminc[1], 
+                                i & 1 ? qymaxc[2] : qyminc[2] }
                 );
         }
 
-        float timeLimit = 15.0;          
-        float epsterm = 0.1;
         float sumt = 0.0;
         float sumdelt = 0.0;
         float sum_path = 0.0;
 
-        for (int i = 0; i <= nGraphc - 1; ++i) {
+        for (int i = 0; i < nGraphc; ++i) {
             runner.init(init_states[i]);
             float currTime = 0;
             float path_length = 0.0;
             Model::State prevState = init_states[i];
-            while (currTime < timeLimit) {
+            while (currTime < time_limit) {
                 currState = runner.makeStep();
                 float dx = currState.x - prevState.x;
                 float dy = currState.y - prevState.y;
@@ -229,7 +253,7 @@ public:
                 prevState = currState;
                 // currState.print();
                 currTime += dt;
-                if (currState.dist(goal) < epsterm)
+                if (currState.dist(goal) < epsilon_term)
                     break; 
             }
             sumt += currTime;
@@ -271,7 +295,7 @@ public:
         
         VectorToGrey(PopChrPar[0], NOP);
 
-        // create inital population
+        // create initial population
         for(int i=1; i<m_HH; ++i)
         {
             // std::cout<<"---- variations ------"<< std::endl;
@@ -316,14 +340,21 @@ public:
         }
         // std::cout<<std::endl;
 
+        // Вызов колбэка для поколения 0 (инициализация)
+        float sum_fitness_init = 0.0f;
+        for (int i = 0; i < m_HH; ++i) {
+            sum_fitness_init += m_Fuh[i][3];
+        }
+        float avg_fitness_init = sum_fitness_init / static_cast<float>(m_HH);
+        if (on_generation_end) {
+            on_generation_end(0, avg_fitness_init);
+        }
+
         int pt = 1;  // номер поколения
-        int ksearch = 8;
+        int ksearch = search_neighbors;
+        float alfa = selection_alpha;
+        float pmut = mutation_prob;
 
-        // float alfa = 0.4;
-        // float pmut = 0.7;
-
-        float alfa = 0.5;
-        float pmut = 0.5;
         while(pt <= m_PP) // PP — число поколений
         {
             std::cout<<pt<<" / "<<m_PP<<std::endl;
@@ -438,6 +469,16 @@ public:
             } // конец кроссоверов
             // std::cout<<"Crossover end"<<std::endl;
 
+            // Вызов колбэка для текущего поколения
+            float sum_fitness = 0.0f;
+            for (int i = 0; i < m_HH; ++i) {
+                sum_fitness += m_Fuh[i][3];
+            }
+            float avg_fitness = sum_fitness / static_cast<float>(m_HH);
+            if (on_generation_end) {
+                on_generation_end(pt, avg_fitness);
+            }
+
             // --- Эпоха закончена, обновление базиса и элита ---
             ChoosePareto();
             ++pt;
@@ -461,10 +502,11 @@ public:
 
         // Find the Pareto solution with the lowest sumt (m_Fuh[i][0])
         int best_idx = Pareto[0];
-        float min_sumt = m_Fuh[best_idx][3];
+        int functional_index = 2;
+        float min_sumt = m_Fuh[best_idx][functional_index];
         for (int idx : Pareto) {
-            if (m_Fuh[idx][3] < min_sumt) {
-                min_sumt = m_Fuh[idx][3];
+            if (m_Fuh[idx][functional_index] < min_sumt) {
+                min_sumt = m_Fuh[idx][functional_index];
                 best_idx = idx;
             }
         }
@@ -478,60 +520,60 @@ public:
         }
         GreyToVector(PopChrPar[best_idx], NOP);
 
-        // Simulate trajectories for the best solution and log to file
-        std::ofstream outFile("trajectories.csv");
-        if (!outFile.is_open()) {
-            std::cerr << "Failed to open trajectories.csv for writing!" << std::endl;
-            return;
-        }
-
-        // Write header
-        outFile << "Trajectory,Time,X,Y,Theta\n";
-
-        // Initialize simulation parameters (same as in Func0)
-        constexpr float dt = 0.03333;
-        Model::State currState = {0.0, 0.0, 0.0};
-        Model model(currState, dt, "rosbot_gazebo9_2d_model.onnx");
-        Model::State goal = {0.0, 0.0, 0.0};
-        Controller controller(goal, NOP);
-        Runner runner(model, controller);
-        runner.setGoal(goal);
-
-        std::vector<Model::State> init_states;
-        int nGraphc = 8;
-        // 1.31
-        std::vector<float> qyminc = {-3.5, -3.5, -1.31};
-        std::vector<float> qymaxc = {3.5, 3.5, 1.31};
-
-        for (int i = 0; i < nGraphc; ++i) {
-            init_states.push_back(
-                Model::State{
-                    i & 4 ? qymaxc[0] : qyminc[0],
-                    i & 2 ? qymaxc[1] : qyminc[1],
-                    i & 1 ? qymaxc[2] : qyminc[2]
-                }
-            );
-        }
-
-        float timeLimit = 15.0;
-        float epsterm = 0.1;
-
-        // Simulate each trajectory and log
-        for (int i = 0; i < nGraphc; ++i) {
-            runner.init(init_states[i]);
-            float currTime = 0;
-            while (currTime < timeLimit) {
-                currState = runner.makeStep();
-                // Log: trajectory number, time, x, y, theta
-                outFile << i << "," << currTime << "," << currState.x << "," << currState.y << "," << currState.yaw << "\n";
-                currTime += dt;
-                if (currState.dist(goal) < epsterm)
-                    break;
+        // Simulate trajectories for the best solution and log to file (if enabled)
+        if (enable_logging) {
+            std::ofstream outFile(output_csv);
+            if (!outFile.is_open()) {
+                std::cerr << "Failed to open " << output_csv << " for writing!" << std::endl;
+                return;
             }
-        }
 
-        outFile.close();
-        std::cout << "Trajectories logged to trajectories.csv" << std::endl;
+            // Write header
+            outFile << "Trajectory,Time,X,Y,Theta\n";
+
+            // Initialize simulation parameters (same as in Func0)
+            Model::State currState = {0.0, 0.0, 0.0};
+            Model model(currState, dt, model_path);
+            Model::State goal = {0.0, 0.0, 0.0};
+            Controller controller(goal, NOP);
+            Runner runner(model, controller);
+            runner.setGoal(goal);
+
+            std::vector<Model::State> init_states;
+            int nGraphc = num_trajectories;
+            std::vector<float> qyminc_local = qyminc;  // copy if needed
+            std::vector<float> qymaxc_local = qymaxc;
+
+            for (int i = 0; i < nGraphc; ++i) {
+                init_states.push_back(
+                    Model::State{
+                        i & 4 ? qymaxc_local[0] : qyminc_local[0],
+                        i & 2 ? qymaxc_local[1] : qyminc_local[1],
+                        i & 1 ? qymaxc_local[2] : qyminc_local[2]
+                    }
+                );
+            }
+
+            float timeLimit_local = time_limit;
+            float epsterm_local = epsilon_term;
+
+            // Simulate each trajectory and log
+            for (int i = 0; i < nGraphc; ++i) {
+                runner.init(init_states[i]);
+                float currTime = 0;
+                while (currTime < timeLimit_local) {
+                    currState = runner.makeStep();
+                    // Log: trajectory number, time, x, y, theta
+                    outFile << i << "," << currTime << "," << currState.x << "," << currState.y << "," << currState.yaw << "\n";
+                    currTime += dt;
+                    if (currState.dist(goal) < epsterm_local)
+                        break;
+                }
+            }
+
+            outFile.close();
+            std::cout << "Trajectories logged to " << output_csv << std::endl;
+        }
 
         // Print final matrix for debugging
         NOP.printMatrix();
@@ -541,4 +583,3 @@ public:
         std::cout<<std::endl;
     }   
 };
-
