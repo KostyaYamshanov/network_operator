@@ -463,20 +463,20 @@ public:
         } 
 
         // Pareto solutions
-        for (int idx : Pareto) {
-            std::cout << "Pareto solution index: " << idx << "\n";
-            std::cout << "Params: ";
-            for (int p : PopChrPar[idx]) std::cout << p << " ";
-            std::cout << "\nObjective values: ";
-            for (float f : m_Fuh[idx]) std::cout << f << " ";
-            std::cout << "\n\n";
-        }
+        // for (int idx : Pareto) {
+        //     std::cout << "Pareto solution index: " << idx << "\n";
+        //     std::cout << "Params: ";
+        //     for (int p : PopChrPar[idx]) std::cout << p << " ";
+        //     std::cout << "\nObjective values: ";
+        //     for (float f : m_Fuh[idx]) std::cout << f << " ";
+        //     std::cout << "\n\n";
+        // }
 
         // --- Select and apply best Pareto solution ---
-        if (Pareto.empty()) {
-            std::cerr << "No Pareto solutions found!" << std::endl;
-            return;
-        }
+        // if (Pareto.empty()) {
+        //     std::cerr << "No Pareto solutions found!" << std::endl;
+        //     return;
+        // }
 
         // Best by composite Fu[m_nfu-1]
         int best_idx = Pareto[0];
