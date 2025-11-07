@@ -1,73 +1,148 @@
-#include "ganop.hpp"
+// train.cpp (исправленный)
+#include "GANOP.hpp"
+#include "RobotSolution.hpp"
+#include "RobotFitnessEvaluator.hpp"
+#include "controller.hpp"  // <-- Добавить
+#include "runner.hpp"      // <-- Добавить
+#include "model.hpp"       // <-- Добавить
 #include <iostream>
 #include <fstream>
 
-// Пример колбэка: логирует в файл
-void my_callback(int gen, float avg_fitness) {
-    std::ofstream log("evolution_log.txt", std::ios::app);
+// Глобальная конфигурация для доступа в колбэке
+RobotProblemConfig g_robot_config;
+
+void log_generation(int gen, float avg_fitness) {
+    static std::ofstream log("evolution_log.txt", std::ios::app);
     log << "Generation " << gen << ": avg_fitness = " << avg_fitness << std::endl;
-    log.close();
     std::cout << "Gen " << gen << " done, avg: " << avg_fitness << std::endl;
 }
 
+void save_best_solution(const ISolution& solution) {
+    const auto& robot_sol = dynamic_cast<const RobotSolution&>(solution);
+    const NetOper& net = robot_sol.getNetOperConst();
+    
+    // Симулируем траектории и сохраняем
+    std::ofstream outFile("trajectories.csv");
+    if (!outFile.is_open()) {
+        std::cerr << "Failed to open trajectories.csv for writing!" << std::endl;
+        return;
+    }
+    
+    outFile << "Trajectory,Time,X,Y,Theta\n";
+    
+    Model::State currState = {0.0f, 0.0f, 0.0f};
+    Model model(currState, g_robot_config.dt, g_robot_config.model_path);
+    Model::State goal = {0.0f, 0.0f, 0.0f};
+    
+    // const_cast если нужно
+    Controller controller(goal, const_cast<NetOper&>(net));
+    Runner runner(model, controller);
+    runner.setGoal(goal);
+    
+    // Генерируем начальные состояния
+    std::vector<Model::State> init_states;
+    for (int i = 0; i < g_robot_config.num_trajectories; ++i) {
+        init_states.push_back(Model::State{
+            (i & 4) ? g_robot_config.qymaxc[0] : g_robot_config.qyminc[0],
+            (i & 2) ? g_robot_config.qymaxc[1] : g_robot_config.qyminc[1],
+            (i & 1) ? g_robot_config.qymaxc[2] : g_robot_config.qyminc[2]
+        });
+    }
+    
+    // Симулируем каждую траекторию
+    for (int i = 0; i < g_robot_config.num_trajectories; ++i) {
+        runner.init(init_states[i]);
+        float currTime = 0.0f;
+        
+        while (currTime < g_robot_config.time_limit) {
+            currState = runner.makeStep();
+            outFile << i << "," << currTime << ","
+                   << currState.x << "," << currState.y << ","
+                   << currState.yaw << "\n";
+            
+            currTime += g_robot_config.dt;
+            
+            if (currState.dist(goal) < g_robot_config.epsilon_term) {
+                break;
+            }
+        }
+    }
+    
+    outFile.close();
+    std::cout << "Trajectories logged to trajectories.csv" << std::endl;
+    
+    // Вывод параметров сети
+    net.printMatrix();
+    
+    // Используем const_cast для получения параметров
+    auto& net_nonconst = const_cast<NetOper&>(net);
+    std::cout << "Parameters: ";
+    for (float p : net_nonconst.get_parameters()) {
+        std::cout << p << " ";
+    }
+    std::cout << std::endl;
+}
 
 int main() {
-    GANOPConfig config; 
+    // === 1. Конфигурация проблемы ===
+    RobotProblemConfig robot_config;
+    robot_config.dt = 0.033333f;
+    robot_config.time_limit = 15.0f;
+    robot_config.epsilon_term = 0.1f;
+    robot_config.num_trajectories = 8;
+    robot_config.qyminc = {-5.5f, -5.5f, -1.31f};
+    robot_config.qymaxc = {5.5f, 5.5f, 1.31f};
+    robot_config.model_path = "rosbot_gazebo9_2d_model.onnx";
+    robot_config.nodes_for_vars = {0, 1, 2};
+    robot_config.nodes_for_params = {3, 4, 5, 6};
+    robot_config.nodes_for_output = {22, 23};
+    
+    // Инициализируем шаблон один раз
+    robot_config.nop_template = std::make_shared<NetOper>();
+    robot_config.nop_template->setNodesForVars(robot_config.nodes_for_vars);
+    robot_config.nop_template->setNodesForParams(robot_config.nodes_for_params);
+    robot_config.nop_template->setNodesForOutput(robot_config.nodes_for_output);
+    // Раскомментируй если есть:
+    robot_config.nop_template->setCs(qc);
+    robot_config.nop_template->setPsi(NopPsiN);
+    
+    std::cout << "NetOper template created once" << std::endl;
 
-    config.on_generation_end = my_callback;
-
-    auto robot_fitness = [&config](TArrReal& Fu, NetOper& net) -> void {
-        Model::State currState = {0.0f, 0.0f, 0.0f}; 
-        Model model(currState, config.dt, config.model_path);
-        
-        Model::State goal = {0.0f, 0.0f, 0.0f};
-        Controller controller(goal, net);
-        Runner runner(model, controller); 
-        runner.setGoal(goal);
-
-        std::vector<Model::State> init_states; 
-        int nGraphc = config.num_trajectories;
-        
-        for (int i = 0; i < nGraphc; ++i) {
-            init_states.push_back(
-                Model::State{   (i & 4) ? config.qymaxc[0] : config.qyminc[0], 
-                                (i & 2) ? config.qymaxc[1] : config.qyminc[1], 
-                                (i & 1) ? config.qymaxc[2] : config.qyminc[2] }
-                );
-        }
-
-        float sumt = 0.0f;
-        float sumdelt = 0.0f;
-        float sum_path = 0.0f;
-
-        for (int i = 0; i < nGraphc; ++i) {
-            runner.init(init_states[i]);
-            float currTime = 0.0f;
-            float path_length = 0.0f;
-            Model::State prevState = init_states[i];
-            while (currTime < config.time_limit) {
-                currState = runner.makeStep();
-                float dx = currState.x - prevState.x;
-                float dy = currState.y - prevState.y;
-                path_length += std::sqrt(dx * dx + dy * dy);
-                prevState = currState;
-                currTime += config.dt;
-                if (currState.dist(goal) < config.epsilon_term)
-                    break; 
-            }
-            sumt += currTime;
-            sumdelt += currState.dist(goal);
-            sum_path += path_length;
-        }
-
-        Fu[0] = sumt;
-        Fu[1] = sumdelt * 2.0f;
-        Fu[2] = sum_path;
-        Fu[3] = sum_path * 1.5f + sumt + sumdelt * 7.0f;
+    // Сохраняем глобально для доступа в колбэке
+    g_robot_config = robot_config;
+    
+    // === 2. Конфигурация GA ===
+    GAConfig ga_config;
+    ga_config.population_size = 500;
+    ga_config.num_generations = 16;
+    ga_config.num_crossovers_per_gen = 24;
+    ga_config.mutation_prob = 0.5f;
+    ga_config.selection_alpha = 0.5f;
+    ga_config.search_neighbors = 8;
+    ga_config.int_bits = 16;
+    ga_config.frac_bits = 16;
+    ga_config.num_params = 4;
+    ga_config.num_struct_variations = 10;
+    ga_config.seed = 49;
+    
+    // === 3. Инъекция зависимостей ===
+    ga_config.fitness_evaluator = std::make_shared<RobotFitnessEvaluator>(robot_config, 4);
+    
+    ga_config.solution_factory = [robot_config]() -> std::unique_ptr<ISolution> {
+        return std::make_unique<RobotSolution>(robot_config);
     };
-
-    config.fitness_func = robot_fitness;
-    GANOP ga(config);
-    ga.GenAlgorithm();
+    
+    ga_config.on_generation_end = log_generation;
+    ga_config.on_algorithm_end = save_best_solution;
+    
+    // === 4. Запуск GA ===
+    try {
+        GANOP ga(ga_config);
+        ga.run();
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    
     return 0;
 }

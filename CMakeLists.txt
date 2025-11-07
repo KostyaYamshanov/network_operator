@@ -30,6 +30,8 @@ set(LibSources
     lib/nop.cpp
     lib/reader.cpp
     lib/runner.cpp
+    lib/RobotSolution.cpp
+    lib/GANOP.cpp
 )
 
 add_library(${This} STATIC ${LibSources})
