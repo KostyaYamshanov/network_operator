@@ -121,8 +121,6 @@ set(LibSources
     lib/reader.cpp
     lib/runner.cpp
     lib/GANOP.cpp
-    app/RobotSolution.cpp
-    app/simple_solution.cpp
 )
 
 add_library(${This} STATIC ${LibSources})

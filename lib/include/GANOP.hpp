@@ -2,7 +2,7 @@
 #pragma once
 #include "GAConfig.hpp"
 #include "nop.hpp"
-#include "RobotSolution.hpp"
+// #include "RobotSolution.hpp"
 #include "isolution.hpp"
 #include <vector>
 #include <memory>

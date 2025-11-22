@@ -1,18 +1,23 @@
 #include "GANOP.hpp"
-#include "simple_solution.hpp"
+#include "base_solution.hpp"
+#include "simple_config.hpp"
 #include "simple_fitness_evaluator.hpp"     
 #include <iostream>
 #include <fstream>
 #include "nop.hpp"
 
+
 // Глобальная конфигурация для доступа в колбэке
 SimpleConfig g_simple_config;
+GAConfig g_ga_config;
+
 
 void log_generation(int gen, float avg_fitness) {
     static std::ofstream log("evolution_log.txt", std::ios::app);
     log << "Generation " << gen << ": avg_fitness = " << avg_fitness << std::endl;
     std::cout << "Gen " << gen << " done, avg: " << avg_fitness << std::endl;
 }
+
 
 void saveResultsToCSV(const std::vector<float>& y_expected, 
                      const std::vector<float>& y_nop,
@@ -42,14 +47,15 @@ void saveResultsToCSV(const std::vector<float>& y_expected,
     std::cout << "Results saved to results.csv" << std::endl;
 }
 
+
 void save_best_solution(const ISolution& solution) {
     try {
-        const auto& simple_sol = dynamic_cast<const SimpleSolution&>(solution);
+        const auto& base_sol = dynamic_cast<const BaseSolution<SimpleConfig>&>(solution);
         auto fitness_evaluator = SimpleFitnessEvaluator(g_simple_config, 1);
-        const NetOper& nop = simple_sol.getNetOperConst();
+        const NetOper& nop = base_sol.getNetOperConst();
         
         std::cout << "\n=== BEST SOLUTION FOUND ===" << std::endl;
-        
+        nop.printMatrix();
         // Целевые значения
         auto y_expected = fitness_evaluator.getTargetValues();
         
@@ -85,15 +91,28 @@ void save_best_solution(const ISolution& solution) {
 
 
 
+
 int main() {
     // === 1. Конфигурация проблемы ===
     SimpleConfig simple_config;
-
+    
+    
+    // === 2. Конфигурация GA ===
     GAConfig ga_config;
     
+    // Копируем данные сети из SimpleConfig
     ga_config.nodes_for_vars = simple_config.nodes_for_vars;
     ga_config.nodes_for_params = simple_config.nodes_for_params;
     ga_config.nodes_for_output = simple_config.nodes_for_output;
+    
+    // Параметры GA
+    ga_config.population_size = 1000;
+    ga_config.num_generations = 128;
+    ga_config.num_params = 2;
+    ga_config.int_bits = 4;
+    ga_config.frac_bits = 8;
+    ga_config.num_struct_variations = 10;
+    ga_config.seed = 42;
     
     // Инициализируем шаблон один раз
     ga_config.nop_template = std::make_shared<NetOper>();
@@ -104,24 +123,22 @@ int main() {
     ga_config.nop_template->setPsi(simple_config.base_matrix);
     
     std::cout << "NetOper template created once" << std::endl;
-
-    // Сохраняем глобально для доступа в колбэке
+    
+    // Сохраняем конфиги глобально для доступа в колбэках
     g_simple_config = simple_config;
+    g_ga_config = ga_config;
     
-    // === 2. Конфигурация GA ===
-    // GAConfig ga_config;
-    ga_config.population_size = 1000;
-    ga_config.num_generations = 128;
-    ga_config.num_params = 2;
-    ga_config.num_struct_variations = 10;
-    ga_config.seed = 42;
-    
-    int num_objectives = 1; // кол-во фунционалов
     // === 3. Инъекция зависимостей ===
+    int num_objectives = 1; // кол-во функционалов
     ga_config.fitness_evaluator = std::make_shared<SimpleFitnessEvaluator>(simple_config, num_objectives);
     
-    ga_config.solution_factory = [simple_config]() -> std::unique_ptr<ISolution> {
-        return std::make_unique<SimpleSolution>(simple_config);
+    // Factory для создания решений с использованием BaseSolution
+    ga_config.solution_factory = [simple_config, &ga_config]() -> std::unique_ptr<ISolution> {
+        auto solution = std::make_unique<BaseSolution<SimpleConfig>>(simple_config);
+        // Устанавливаем биты из GA конфига
+        solution->setIntBits(ga_config.int_bits);
+        solution->setFracBits(ga_config.frac_bits);
+        return solution;
     };
     
     ga_config.on_generation_end = log_generation;
