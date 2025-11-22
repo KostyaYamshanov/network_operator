@@ -60,48 +60,51 @@ void GANOP::run() {
     for (int generation = 1; generation <= config_.num_generations; ++generation) {
         std::cout << generation << " / " << config_.num_generations << std::endl;
         
+        // В цикле crossover_idx
         for (int crossover_idx = 0; crossover_idx < config_.num_crossovers_per_gen; ++crossover_idx) {
-            // Выбор двух родителей
             int parent1, parent2;
             selectParents(parent1, parent2);
             
-            // Проверка вероятности кроссовера
             std::uniform_real_distribution<float> dist_real(0.0f, 1.0f);
             float ksi = dist_real(rng_);
             
             int num_obj = config_.fitness_evaluator->getNumObjectives();
             float prob1 = (1.0f + config_.selection_alpha * pareto_ranks_[parent1]) / 
-                          (1.0f + pareto_ranks_[parent1]);
+                        (1.0f + pareto_ranks_[parent1]);
             float prob2 = (1.0f + config_.selection_alpha * pareto_ranks_[parent2]) / 
-                          (1.0f + pareto_ranks_[parent2]);
+                        (1.0f + pareto_ranks_[parent2]);
             
             if (ksi < prob1 || ksi < prob2) {
-                // Кроссовер
                 std::vector<std::vector<int>> offspring_params(4);
                 std::vector<std::vector<std::vector<int>>> offspring_struct(4);
+                std::vector<std::vector<float>> offspring_fitness(4);  // ← Кэш фитнесса
+                std::vector<int> offspring_ranks(4);                   // ← Кэш рангов
                 
                 crossover(parent1, parent2, offspring_params, offspring_struct);
                 
-                // Мутация и оценка каждого потомка
+                // ===== ЭТАП 1: Оценка всех 4 потомков =====
                 for (int offspring = 0; offspring < 4; ++offspring) {
                     if (dist_real(rng_) < config_.mutation_prob) {
                         mutate(offspring_params[offspring], offspring_struct[offspring]);
                     }
                     
-                    // Оценка потомка
                     auto solution = config_.solution_factory();
                     solution->decode(offspring_params[offspring], offspring_struct[offspring]);
-                    auto fitness = config_.fitness_evaluator->evaluate(*solution);
+                    offspring_fitness[offspring] = config_.fitness_evaluator->evaluate(*solution);
                     
-                    if (fitness.size() != static_cast<size_t>(num_obj)) {
+                    if (offspring_fitness[offspring].size() != static_cast<size_t>(num_obj)) {
                         throw std::runtime_error(
-                            "Fitness function returned wrong number of objectives: " +
-                            std::to_string(fitness.size()) + " (expected " + 
-                            std::to_string(num_obj) + ")"
+                            "Fitness function returned wrong number of objectives"
                         );
                     }
                     
-                    // Поиск особи с максимальным рангом для замены
+                    // Вычисляем ранг один раз
+                    offspring_ranks[offspring] = computeRank(offspring_fitness[offspring]);
+                }
+                
+                // ===== ЭТАП 2: Замена потомков в популяции =====
+                for (int offspring = 0; offspring < 4; ++offspring) {
+                    // Поиск worst_idx (можно оптимизировать, но так точнее соответствует оригиналу)
                     int worst_idx = 0;
                     int max_rank = pareto_ranks_[0];
                     for (int i = 1; i < config_.population_size; ++i) {
@@ -111,15 +114,12 @@ void GANOP::run() {
                         }
                     }
                     
-                    // Замена, если потомок лучше худшей особи
-                    int offspring_rank = computeRank(fitness);
-                    if (offspring_rank < max_rank) {
+                    // Замена
+                    if (offspring_ranks[offspring] < max_rank) {
                         population_params_[worst_idx] = offspring_params[offspring];
                         population_struct_[worst_idx] = offspring_struct[offspring];
-                        fitness_population_[worst_idx] = fitness;
-                        
-                        // Локальное обновление рангов (только для худшей и соседей)
-                        pareto_ranks_[worst_idx] = offspring_rank;
+                        fitness_population_[worst_idx] = offspring_fitness[offspring];
+                        pareto_ranks_[worst_idx] = offspring_ranks[offspring];
                         
                         std::uniform_int_distribution<int> dist_idx(0, config_.population_size - 1);
                         for (int k = 0; k < 10; ++k) {
@@ -132,7 +132,7 @@ void GANOP::run() {
                 }
             }
         }
-        
+
         // Обновление всех рангов Парето
         updateParetoRanks();
         
@@ -177,29 +177,33 @@ void GANOP::run() {
 void GANOP::initializePopulation() {
     std::uniform_int_distribution<int> dist_bit(0, 1);
     
-    auto temp_solution = config_.solution_factory();
-    auto robot_sol = dynamic_cast<RobotSolution*>(temp_solution.get());
+    // auto temp_solution = config_.solution_factory();
+    // auto robot_sol = dynamic_cast<RobotSolution*>(temp_solution.get());
     
-    if (!robot_sol) {
-        throw std::runtime_error(
-            "initializePopulation error: solution must be RobotSolution"
-        );
-    }
+    // if (!robot_sol) {
+        // throw std::runtime_error(
+            // "initializePopulation error: solution must be RobotSolution"
+        // );
+    // }
 
-    NetOper& nop = robot_sol->getNetOper();
-    
+    // NetOper& nop = robot_sol->getNetOper();
+    NetOper nop = *config_.nop_template;
+
+    // TEST
+    nop_template_ = *config_.nop_template;
+
     // Инициализируем NetOper
-    nop.setCs(qc);
-    nop.setPsi(NopPsiN);
-    auto robot_config = robot_sol->get_config();
-    nop.setNodesForVars(robot_config.nodes_for_vars);
-    nop.setNodesForParams(robot_config.nodes_for_params);
-    nop.setNodesForOutput(robot_config.nodes_for_output);
+    // nop.setCs(qc);
+    // nop.setPsi(NopPsiN);
+    // auto robot_config = robot_sol->get_config();
+    // nop.setNodesForVars(config_.nodes_for_vars);
+    // nop.setNodesForParams(config_.nodes_for_params);
+    // nop.setNodesForOutput(config_.nodes_for_output);
     
     // === Первая особь ===
     // После setCs(qc), параметры NOP уже содержат qc
     // Теперь преобразуем их в Grey код для хромосомы
-    vectorToGrey(population_params_[0], nop);  // ← Вот здесь!
+    vectorToGrey(population_params_[0], nop);  
     
     // Генерируем вариации структуры
     // for (int j = 0; j < config_.num_struct_variations; ++j) {
@@ -493,14 +497,27 @@ void GANOP::mutate(std::vector<int>& chromosome_params,
     
     // Мутация параметров (инвертирование случайного бита)
     int mutant_bit = dist_param(rng_);
-    chromosome_params[mutant_bit] = 1 - chromosome_params[mutant_bit];
+    chromosome_params[mutant_bit] = dist_bit(rng_);  // ← Было: 1 - chromosome_params[mutant_bit]
     
-    // Мутация структуры (случайная регенерация одной вариации)
+    // Мутация структуры (генерация новой вариации через NOP.GenVar)
     int mutant_struct = dist_struct(rng_);
-    for (auto& bit : chromosome_struct[mutant_struct]) {
-        bit = dist_bit(rng_);
-    }
+    
+    nop_template_.GenVar(chromosome_struct[mutant_struct]);
+    // Нужен доступ к NetOper для вызова GenVar
+    // auto temp_solution = config_.solution_factory();
+    // auto robot_sol = dynamic_cast<RobotSolution*>(temp_solution.get());
+    
+    // if (robot_sol) {
+    //     NetOper& nop = robot_sol->getNetOper();
+    //     nop.GenVar(chromosome_struct[mutant_struct]);  // ← Правильная мутация!
+    // } else {
+    //     // Fallback: случайная регенерация
+    //     for (auto& bit : chromosome_struct[mutant_struct]) {
+    //         bit = dist_bit(rng_);
+    //     }
+    // }
 }
+
 
 int GANOP::getBestParetoIndex() const {
     if (pareto_indices_.empty()) {

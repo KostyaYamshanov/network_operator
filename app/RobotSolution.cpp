@@ -1,42 +1,17 @@
-// src/RobotSolution.cpp
 #include "RobotSolution.hpp"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 
-// Внешние переменные из твоего кода (если они есть в другом файле)
-// extern std::vector<int> qc;
-// extern std::function<void(int, std::vector<float>&)> NopPsiN;
-
 RobotSolution::RobotSolution(const RobotProblemConfig& config)
     : config_(config), int_bits_(16), frac_bits_(16), num_params_(4) {
     
-    try {
-        // Инициализируем NetOper с параметрами из конфига
-        // Если у тебя есть глобальные переменные qc и NopPsiN, раскомментируй:
-        // net_oper_.setCs(qc);
-        // net_oper_.setPsi(NopPsiN);
-        
-        // net_oper_.setNodesForVars(config.nodes_for_vars);
-        // net_oper_.setNodesForParams(config.nodes_for_params);
-        // net_oper_.setNodesForOutput(config.nodes_for_output);
-
-        // Если в config есть шаблон, клонируем его
-        // if (config.nop_template) {
-        net_oper_ = *config.nop_template;
-        // } else {
-        //     // Иначе инициализируем как обычно
-        //     net_oper_.setNodesForVars(config.nodes_for_vars);
-        //     net_oper_.setNodesForParams(config.nodes_for_params);
-        //     net_oper_.setNodesForOutput(config.nodes_for_output);
-        // }
-
-        
-        // std::cout << "RobotSolution initialized successfully" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error initializing RobotSolution: " << e.what() << std::endl;
-        throw;
-    }
+    net_oper_ = NetOper();// *config.nop_template;
+    net_oper_.setNodesForVars(config_.nodes_for_vars);
+    net_oper_.setNodesForParams(config_.nodes_for_params);
+    net_oper_.setNodesForOutput(config_.nodes_for_output);
+    net_oper_.setCs(config_.base_params);
+    net_oper_.setPsi(config_.base_matrix);
 }
 
 RobotProblemConfig RobotSolution::get_config()
@@ -46,28 +21,13 @@ RobotProblemConfig RobotSolution::get_config()
 
 void RobotSolution::decode(const std::vector<int>& chromosome_params,
                            const std::vector<std::vector<int>>& chromosome_struct) {
-    try {
-        // // Проверка входных данных
-        // if (chromosome_params.empty()) {
-        //     std::cerr << "Warning: chromosome_params is empty" << std::endl;
-        //     return;
-        // }
-        
-        // if (chromosome_struct.empty()) {
-        //     std::cerr << "Warning: chromosome_struct is empty" << std::endl;
-        //     return;
-        // }
-        
-        // Устанавливаем структурные вариации
-        net_oper_.setPsi(NopPsiN);  // Раскомментируй если нужно
+    try {        
+        net_oper_.setPsi(NopPsiN);
         
         for (size_t i = 0; i < chromosome_struct.size(); ++i) {
-            // if (!chromosome_struct[i].empty()) {
             net_oper_.Variations(chromosome_struct[i]);
-            // }
         }
         
-        // Декодируем параметры из кода Грея в вещественные числа
         greyToVector(chromosome_params);
         
     } catch (const std::exception& e) {

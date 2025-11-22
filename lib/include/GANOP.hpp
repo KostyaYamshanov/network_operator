@@ -47,4 +47,6 @@ private:
     
     // Генератор случайных чисел
     std::mt19937 rng_;
+
+    NetOper nop_template_;
 };
