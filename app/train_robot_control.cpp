@@ -95,7 +95,7 @@ int main() {
     robot_config.qyminc = {-2.5f, -2.5f, -1.31f};
     robot_config.qymaxc = {2.5f, 2.5f, 1.31f};
     robot_config.model_path = "rosbot_gazebo9_2d_model.onnx";
-    robot_config.base_matrix = NopPsiN;
+    // robot_config.base_matrix = NopPsiN;
     // robot_config.base_params = {6703.02, 20833.6, 39213.1, 51080.3};
 
     robot_config.base_params = {4.02, 3.6, 2.1, 1.3};

@@ -22,7 +22,7 @@ RobotProblemConfig RobotSolution::get_config()
 void RobotSolution::decode(const std::vector<int>& chromosome_params,
                            const std::vector<std::vector<int>>& chromosome_struct) {
     try {        
-        net_oper_.setPsi(NopPsiN);
+        net_oper_.setPsi(config_.base_matrix);
         
         for (size_t i = 0; i < chromosome_struct.size(); ++i) {
             net_oper_.Variations(chromosome_struct[i]);

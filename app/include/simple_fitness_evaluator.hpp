@@ -60,12 +60,6 @@ public:
     
     int getNumObjectives() const override { return num_objectives_; }
     
-
-    // Целевая функция: f(x, q) = sin(x) + q*cos(x)
-    static float targetFunction(float x, float q) {
-        return std::sin(x) + q * std::cos(x);
-    }
-
     static float computeRMSE(const std::vector<float>& y_out, 
                             const std::vector<float>& y_ref) {
         if (y_out.size() != y_ref.size()) {
@@ -81,7 +75,13 @@ public:
         return std::sqrt(sum_squares / y_out.size());
     }
 
-        // Получение целевых значений
+    
+    // Целевая функция: f(x, q) = sin(x) + q*cos(x)
+    static float targetFunction(float x, float q) {
+        return std::sin(x) + q * std::cos(x);
+    }
+
+    // Получение целевых значений
     std::vector<float> getTargetValues() {
         std::vector<float> result;
         float x = config_.x_start;
