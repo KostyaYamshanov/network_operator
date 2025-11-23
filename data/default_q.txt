@@ -1,16 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CONFIG>
-  <grid version="3">
-    <saveoptions create="False" position="False" content="True"/>
-    <content>
-      <cells cellcount="6">
-        <cell1 column="0" row="0" text="q[0]"/>
-        <cell2 column="0" row="1" text="q[1]"/>
-        <cell3 column="0" row="2" text="q[2]"/>
-        <cell4 column="1" row="0" text="8.97949"/>
-        <cell5 column="1" row="1" text="14.92749"/>
-        <cell6 column="1" row="2" text="14.75464"/>
-      </cells>
-    </content>
-  </grid>
-</CONFIG>
+50150.5 23227.4 5022.71 37037.5 376.38 2979.02 14908.7 27469.4
