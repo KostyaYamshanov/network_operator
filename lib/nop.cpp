@@ -290,61 +290,223 @@ void NetOper::setLocalTestsParameters()
     this->setPsi(reader.getMatrix());
 }
 
-// Goood
-// const std::vector<std::vector<int>> NopPsiN = {
-//         {0, 0, 0, 0, 0, 0, 1, 10, 0, 0, 12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10},
-//         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 9, 0, 0, 0, 0, 10, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 22, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 19},
-//         {0, 0, 1, 0, 0, 0, 6, 0, 0, 8, 0, 5, 0, 4, 13, 10, 0, 0, 0, 14, 15, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 10, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 8, 0, 0, 0, 12, 0, 0, 1, 19, 0, 0, 0},
-//         {0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 1, 8, 0, 0, 0, 1, 8, 0, 0, 0, 14, 12, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 0, 5, 4, 23, 0, 0, 0, 0, 15, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 10, 10, 0, 0, 0, 0, 16, 0, 16, 0, 16},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 14, 0, 25, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 0, 0, 0, 0, 12, 0, 13},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 8, 0, 0, 27, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 0, 15, 1, 0, 0},
-//         {0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 1, 0, 0, 0, 2, 0, 17, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 21, 4, 16, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 1, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 7, 16, 13},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}
-//     };
+
+/**
+ * @brief Загрузить матрицу из текстового файла
+ * 
+ * Формат: числа разделены пробелами, строки - на новых строках
+ * Пример содержимого файла matrix.txt:
+ *   1 0 0 0 0 0 1 10 0 0 12 1 ...
+ *   0 1 0 0 0 0 0 1 0 0 0 0 ...
+ *   ...
+ */
+bool NetOper::loadMatrixFromFile(const std::string& filepath)
+{
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "ERROR: Could not open matrix file: " << filepath << std::endl;
+        return false;
+    }
+
+    m_matrix.clear();
+    std::string line;
+    int row_count = 0;
+
+    while (std::getline(file, line)) {
+        // Пропускаем пустые строки
+        if (line.empty() || line.find_first_not_of(" \t\r\n") == std::string::npos) {
+            continue;
+        }
+
+        std::vector<int> row;
+        std::stringstream ss(line);
+        int value;
+
+        // Парсим числа из строки (разделители: пробел, запятая)
+        while (ss >> value) {
+            row.push_back(value);
+            // Пропускаем запятые если есть
+            if (ss.peek() == ',') {
+                ss.ignore();
+            }
+        }
+
+        if (row.empty()) {
+            std::cerr << "WARNING: Empty row at line " << (row_count + 1) << std::endl;
+            continue;
+        }
+
+        m_matrix.push_back(row);
+        row_count++;
+    }
+
+    file.close();
+
+    if (m_matrix.empty()) {
+        std::cerr << "ERROR: Matrix is empty after loading from " << filepath << std::endl;
+        return false;
+    }
+
+    // Проверяем что матрица квадратная и все строки одинакового размера
+    size_t expected_cols = m_matrix[0].size();
+    for (size_t i = 0; i < m_matrix.size(); ++i) {
+        if (m_matrix[i].size() != expected_cols) {
+            std::cerr << "ERROR: Row " << i << " has " << m_matrix[i].size() 
+                      << " columns, expected " << expected_cols << std::endl;
+            return false;
+        }
+    }
+
+    // Проверяем что матрица квадратная (для NOP это требование)
+    if (m_matrix.size() != expected_cols) {
+        std::cerr << "WARNING: Matrix is not square! Rows: " << m_matrix.size() 
+                  << ", Cols: " << expected_cols << std::endl;
+        // Не критично, но важно знать
+    }
+
+    // Инициализируем z с нужным размером
+    z.resize(m_matrix.size());
+
+    std::cout << "✓ Successfully loaded matrix from " << filepath << std::endl;
+    std::cout << "  Matrix size: " << m_matrix.size() << " x " << expected_cols << std::endl;
+
+    return true;
+}
 
 
-// const std::vector<std::vector<int>> NopPsiN = {
-//         {0, 0, 0, 0, 0, 0, 1, 10, 0, 0, 12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10},
-//         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 9, 0, 0, 0, 0, 10, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 22, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 19},
-//         {0, 0, 1, 0, 0, 0, 6, 0, 0, 8, 0, 5, 0, 4, 13, 10, 0, 0, 0, 14, 15, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 10, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 8, 0, 0, 0, 12, 0, 0, 1, 19, 0, 0, 0},
-//         {0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 1, 8, 0, 0, 0, 1, 8, 0, 0, 0, 14, 12, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 26, 5, 4, 23, 0, 0, 0, 0, 15, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 10, 10, 0, 0, 0, 0, 16, 0, 16, 0, 16},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 14, 0, 25, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 10, 0, 1, 0, 0, 12, 0, 13},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 8, 0, 0, 27, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 0, 15, 4, 0, 0},
-//         {0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 1, 0, 0, 0, 7, 0, 17, 0, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 21, 0, 16, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 0, 0},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 7, 16, 13},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4},
-//         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}
-//     };
+/**
+ * @brief Загрузить параметры из текстового файла
+ * 
+ * Формат: числа разделены пробелами или на отдельных строках
+ * Пример содержимого файла params.txt:
+ *   41974.2 29423.1 53775.6 16406.0 41974.2 29423.1 53775.6 16406.0
+ * 
+ * Или каждое число на отдельной строке:
+ *   41974.2
+ *   29423.1
+ *   53775.6
+ *   16406.0
+ */
+bool NetOper::loadParametersFromFile(const std::string& filepath)
+{
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "ERROR: Could not open parameters file: " << filepath << std::endl;
+        return false;
+    }
+
+    m_parameters.clear();
+    std::string line;
+    float value;
+
+    // Читаем весь файл как поток значений (пробельные разделители)
+    while (file >> value) {
+        m_parameters.push_back(value);
+    }
+
+    file.close();
+
+    if (m_parameters.empty()) {
+        std::cerr << "ERROR: No parameters loaded from " << filepath << std::endl;
+        return false;
+    }
+
+    std::cout << "✓ Successfully loaded " << m_parameters.size() << " parameters from " << filepath << std::endl;
+    std::cout << "  Parameters: ";
+    for (size_t i = 0; i < m_parameters.size(); ++i) {
+        std::cout << m_parameters[i];
+        if (i < m_parameters.size() - 1) std::cout << ", ";
+    }
+    std::cout << std::endl;
+
+    return true;
+}
+
+
+/**
+ * @brief Сохранить матрицу в текстовый файл
+ * 
+ * Формат: числа разделены пробелами, строки - на новых строках
+ * Пример вывода:
+ *   1 0 0 0 0 0 1 10 0 0 12 1 ...
+ *   0 1 0 0 0 0 0 1 0 0 0 0 ...
+ *   ...
+ */
+bool NetOper::saveMatrixToFile(const std::string& filepath) const
+{
+    std::ofstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "ERROR: Could not open matrix file for writing: " << filepath << std::endl;
+        return false;
+    }
+
+    if (m_matrix.empty()) {
+        std::cerr << "ERROR: Matrix is empty, nothing to save!" << std::endl;
+        file.close();
+        return false;
+    }
+
+    // Записываем каждую строку матрицы
+    for (size_t i = 0; i < m_matrix.size(); ++i) {
+        for (size_t j = 0; j < m_matrix[i].size(); ++j) {
+            file << m_matrix[i][j];
+            if (j < m_matrix[i].size() - 1) {
+                file << " ";  // Разделитель между элементами
+            }
+        }
+        file << "\n";  // Новая строка после каждой строки матрицы
+    }
+
+    file.close();
+
+    std::cout << "✓ Successfully saved matrix to " << filepath << std::endl;
+    std::cout << "  Matrix size: " << m_matrix.size() << " x " << m_matrix[0].size() << std::endl;
+
+    return true;
+}
+
+
+/**
+ * @brief Сохранить параметры в текстовый файл
+ * 
+ * Формат: числа разделены пробелами на одной строке
+ * Пример вывода: 41974.2 29423.1 53775.6 16406.0 41974.2 29423.1 53775.6 16406.0
+ */
+bool NetOper::saveParametersToFile(const std::string& filepath) const
+{
+    std::ofstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "ERROR: Could not open parameters file for writing: " << filepath << std::endl;
+        return false;
+    }
+
+    if (m_parameters.empty()) {
+        std::cerr << "ERROR: Parameters are empty, nothing to save!" << std::endl;
+        file.close();
+        return false;
+    }
+
+    // Записываем параметры в одну строку, разделённые пробелами
+    for (size_t i = 0; i < m_parameters.size(); ++i) {
+        file << m_parameters[i];
+        if (i < m_parameters.size() - 1) {
+            file << " ";  // Разделитель между параметрами
+        }
+    }
+    file << "\n";  // Новая строка в конце
+
+    file.close();
+
+    std::cout << "✓ Successfully saved " << m_parameters.size() << " parameters to " << filepath << std::endl;
+    std::cout << "  Parameters: ";
+    for (size_t i = 0; i < m_parameters.size(); ++i) {
+        std::cout << m_parameters[i];
+        if (i < m_parameters.size() - 1) std::cout << ", ";
+    }
+    std::cout << std::endl;
+
+    return true;
+}
 
 const std::vector<std::vector<int>> NopPsiN = {
     {1, 0, 0, 0, 0, 0, 1, 10, 0, 0, 12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10},

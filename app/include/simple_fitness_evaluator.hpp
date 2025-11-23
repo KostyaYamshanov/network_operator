@@ -24,8 +24,6 @@ public:
     /**
      * @brief Вычисление фитнеса
      * 
-     * ✨ Больше нет dynamic_cast!
-     * ✨ Работает с любым ISolution
      */
     std::vector<float> evaluate(const ISolution& solution) override {
         try {

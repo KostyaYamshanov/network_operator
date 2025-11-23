@@ -24,8 +24,6 @@ public:
     /**
      * @brief Вычисление фитнеса
      * 
-     * ✨ Больше нет dynamic_cast!
-     * ✨ Работает с любым ISolution
      */
     std::vector<float> evaluate(const ISolution& solution) override {
         try {
@@ -40,7 +38,6 @@ public:
             Runner runner(model, controller);
             runner.setGoal(goal);
             
-            // ✨ Используем метод конфига для генерации траекторий
             std::vector<Model::State> init_states = config_.generateTrainTrajectories();
             
             float total_time = 0.0f;
