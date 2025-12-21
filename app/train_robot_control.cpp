@@ -108,10 +108,10 @@ int main() {
     // === 1. Конфигурация проблемы ===
     RobotProblemConfig robot_config;
     robot_config.dt = 0.033333f;
-    robot_config.time_limit = 30.0f;
+    robot_config.time_limit = 15.0f;
     robot_config.epsilon_term = 0.1f;
     
-    robot_config.num_trajectories = 64;
+    robot_config.num_trajectories = 16;
     robot_config.num_test_trajectories = 64;  
     
     robot_config.qyminc = {-5.5f, -5.5f, -1.31f};
@@ -126,16 +126,16 @@ int main() {
     ga_config.nodes_for_output = robot_config.nodes_for_output;
     
     // Параметры GA
-    ga_config.population_size = 500;
-    ga_config.num_generations = 1;
-    ga_config.num_crossovers_per_gen = 24;
-    ga_config.mutation_prob = 0.5f;
-    ga_config.selection_alpha = 0.5f;
-    ga_config.search_neighbors = 64;
+    ga_config.population_size = 1000;
+    ga_config.num_generations = 12;
+    ga_config.num_crossovers_per_gen = 50;
+    ga_config.mutation_prob = 1.0f;
+    ga_config.selection_alpha = 0.9f;
+    ga_config.search_neighbors = 256;
     ga_config.int_bits = 16;
     ga_config.frac_bits = 16;
     ga_config.num_params = 8;
-    ga_config.num_struct_variations = 15;
+    ga_config.num_struct_variations = 20;
     ga_config.seed = 69;
     
     // Инициализируем шаблон один раз

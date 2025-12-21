@@ -10,7 +10,7 @@ float ro_2(float inp)
 	if (fabs(inp) > sqrt(Infinity))
 		return Infinity;
 	else
-		return pow(inp, 2.0);
+		return inp * inp;
 }
 
 float ro_3(float inp)
@@ -33,8 +33,8 @@ float ro_5(float inp)
 
 float ro_6(float inp)
 {
-	if (inp > -log(Eps))
-		return -log(Eps);
+	if (inp > -logf(Eps))
+		return -logf(Eps);
 	else
 		return exp(inp);
 }
@@ -91,7 +91,7 @@ float ro_14(float inp)
 	if (fabs(inp) > ro_15(Infinity))
 		return ro_10(inp) * Infinity;
 	else
-		return pow(inp, 3.0); // sqr(z)*z
+		return inp * inp * inp;
 }
 
 float ro_15(float inp)
@@ -154,7 +154,7 @@ float ro_23(float inp)
 	if (fabs(inp) > 1./Eps)
 		return (-1) * ro_10(inp) / Eps;
 	else
-		return inp - pow(inp, 3.0);
+		return inp - inp * inp * inp;
 }
 
 float ro_24(float inp)
@@ -180,7 +180,7 @@ float ro_25(float inp)
 
 float ro_26(float inp)
 {
-	if (fabs(inp) < pow(10, -2))
+	if (fabs(inp) < 0.01f)
 		return 0.;
 	else
 		return ro_10(inp);
@@ -188,18 +188,18 @@ float ro_26(float inp)
 
 float ro_27(float inp)
 {
-	if (fabs(inp) > 1.0)
+	if (fabs(inp) > 1.0f)
 		return ro_10(inp);
 	else
-		return ro_10(inp) * (1.0 - sqrt(1.0 - pow(inp, 2.0)));
+		return ro_10(inp) * (1.0 - sqrt(std::max(0.0f, 1.0f - inp * inp)));
 }
 
 float ro_28(float inp)
 {
-	if (pow(inp, 2) > log(Infinity))
+	if (inp * inp > log(Infinity))
 		return inp * (1.0 - Eps);
 	else
-		return inp * (1.0 - exp(-pow(inp, 2.0)));
+		return inp * (1.0 - exp(-(inp * inp)));
 }
 
 float xi_1(float l, float r)
@@ -238,7 +238,7 @@ float xi_5(float l, float r)
 
 float xi_6(float l, float r)
 {
-	return ro_10(l + r) * sqrt(pow(l, 2.0) + pow(r, 2.0));
+	return ro_10(l + r) * sqrt(l * l + r * r);
 }
 
 float xi_7(float l, float r)

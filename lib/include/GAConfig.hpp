@@ -26,7 +26,7 @@ struct GAConfig {
     // Network topology
     std::vector<int> nodes_for_vars = {0, 1, 2};
     std::vector<int> nodes_for_params = {3, 4, 5, 6};
-    std::vector<int> nodes_for_output = {22, 23};
+    std::vector<int> nodes_for_output = {30, 31};
 
     std::shared_ptr<NetOper> nop_template;
 

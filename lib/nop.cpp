@@ -198,20 +198,39 @@ void NetOper::GenVar(std::vector<int>& w)
         w[1] = rand() % (L - 1);
         w[2] = rand() % (L - w[1] - 1) + w[1] + 1;
         w[3] = rand() % kW;
-        if (w[3] == 0)
-            w[3] = 1;
+        // if (w[3] == 0)
+        //     w[3] = 1;
+        w[3] = (rand() % kW) + 1; 
         break;
 
     case 1: // замена диагонального элемента
         w[1] = rand() % L;
 
-        while (w[1] < L && !TestSource(w[1]))
-            w[1]++;
+        // while (w[1] < L && !TestSource(w[1]))
+        //     w[1]++;
+
+                int start = w[1];
+        bool found = false;
+        for (int i = 0; i < L; ++i) {
+            int idx = (start + i) % L; // Зацикленный индекс
+            if (TestSource(idx)) {
+                w[1] = idx;
+                found = true;
+                break;
+            }
+        }
+        
+        // Если вдруг (теоретически невозможно) не нашли, ставим 0
+        if (!found) w[1] = 0; 
+
+        w[2] = w[1]; // Диагональ: строка равна столбцу
+
 
         w[2] = w[1];
-        w[3] = rand() % kV;
-        if (w[3] == 0)
-            w[3] = 1;
+        // w[3] = rand() % kV;
+        // if (w[3] == 0)
+        //     w[3] = 1;
+        w[3] = (rand() % kV) + 1;
         break;
     }
 }
