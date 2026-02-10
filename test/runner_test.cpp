@@ -14,8 +14,9 @@ TEST(Runner, FullTest)
     netOp.setPsi(NopPsiN);
 
     constexpr float dt = 0.01;
-    Model::State currState = {0.0, 0.0, 0.0}; 
-    Model model(currState, dt);
+    Model::State currState = {0.0, 0.0, 0.0};
+    // Use ONNX model for neural network predictions
+    Model model(currState, dt, "../rosbot_gazebo9_2d_model.onnx");
     
     Model::State goal = {0.0, 0.0, 0.0};
     Controller controller(goal, netOp);

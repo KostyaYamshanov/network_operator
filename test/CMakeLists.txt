@@ -13,6 +13,8 @@ set(Sources
     model_test.cpp
     runner_test.cpp
     reader_test.cpp
+    base_functions_test.cpp
+    nop_extended_test.cpp
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ldl")
